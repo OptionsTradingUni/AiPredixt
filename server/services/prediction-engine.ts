@@ -773,10 +773,25 @@ export class PredictionEngine {
     // Additional markets for Football
     if (this.mapSportName(game.sport) === 'Football') {
       // Both Teams To Score (BTTS)
-      const bttsOdds = 1.85;
+      // Calculate BTTS probability from base probabilities - teams need to score
+      let bttsProb = Math.min(95, Math.max(5, 55 + (trueProbBase - 0.5) * 15));
+      
+      if (game.odds.moneyline) {
+        const probabilities = ProbabilityCalculator.calculateThreeWayFromOdds(
+          game.odds.moneyline.home,
+          game.odds.moneyline.away,
+          game.odds.moneyline.draw,
+          trueProbBase - 0.5
+        );
+        
+        // BTTS is more likely when neither team dominates completely
+        const scoringBalance = 1 - Math.abs(probabilities.home - probabilities.away) / 100;
+        bttsProb = Math.min(95, Math.max(5, 50 + (trueProbBase - 0.5) * 20 + scoringBalance * 15));
+      }
+      
+      // Calculate fair odds from probability
+      const bttsOdds = 1 / (bttsProb / 100);
       const bttsImplied = (1 / bttsOdds) * 100;
-      // Higher scoring games (trueProbBase > 0.5) favor BTTS
-      const bttsProb = Math.min(95, Math.max(5, 55 + (trueProbBase - 0.5) * 15));
       const bttsEdge = bttsProb - bttsImplied;
       const bttsKelly = this.calculateKellyStake(bttsProb / 100, bttsOdds);
       
@@ -803,6 +818,283 @@ export class PredictionEngine {
         },
         dataSources,
       });
+
+      // Double Chance Markets - combine two outcomes with realistic bookmaker margin
+      if (game.odds.moneyline?.draw) {
+        const homeOdds = game.odds.moneyline.home;
+        const awayOdds = game.odds.moneyline.away;
+        const drawOdds = game.odds.moneyline.draw;
+        
+        // Get base probabilities
+        const probabilities = ProbabilityCalculator.calculateThreeWayFromOdds(
+          homeOdds, awayOdds, drawOdds, trueProbBase - 0.5
+        );
+        
+        // Home/Draw Double Chance
+        // Simulate realistic bookmaker odds by deriving from single odds with margin
+        const homeDrawProb = probabilities.home + probabilities.draw;
+        // Bookmaker would price this by combining the reciprocals with a margin
+        const homeDrawBookmakerOdds = 1 / ((1/homeOdds + 1/drawOdds) * 1.05);
+        const homeDrawImplied = (1 / homeDrawBookmakerOdds) * 100;
+        const homeDrawEdge = homeDrawProb - homeDrawImplied;
+        const homeDrawKelly = this.calculateKellyStake(homeDrawProb / 100, homeDrawBookmakerOdds);
+        
+        markets.push({
+          category: 'double_chance',
+          selection: 'Home or Draw',
+          odds: homeDrawBookmakerOdds,
+          bookmaker: game.bookmaker,
+          marketLiquidity: 'Medium',
+          calculatedProbability: {
+            ensembleAverage: homeDrawProb,
+            calibratedRange: {
+              lower: Math.max(0, homeDrawProb - 4),
+              upper: Math.min(100, homeDrawProb + 4),
+            },
+          },
+          impliedProbability: homeDrawImplied,
+          edge: homeDrawEdge,
+          confidenceScore: Math.min(95, Math.abs(homeDrawEdge) * 5 + 55),
+          recommendedStake: {
+            kellyFraction: `${homeDrawKelly.toFixed(2)} Units`,
+            unitDescription: 'Quarter-Kelly formula',
+            percentageOfBankroll: homeDrawKelly,
+          },
+          dataSources,
+        });
+
+        // Away/Draw Double Chance
+        const awayDrawProb = probabilities.away + probabilities.draw;
+        const awayDrawBookmakerOdds = 1 / ((1/awayOdds + 1/drawOdds) * 1.05);
+        const awayDrawImplied = (1 / awayDrawBookmakerOdds) * 100;
+        const awayDrawEdge = awayDrawProb - awayDrawImplied;
+        const awayDrawKelly = this.calculateKellyStake(awayDrawProb / 100, awayDrawBookmakerOdds);
+        
+        markets.push({
+          category: 'double_chance',
+          selection: 'Away or Draw',
+          odds: awayDrawBookmakerOdds,
+          bookmaker: game.bookmaker,
+          marketLiquidity: 'Medium',
+          calculatedProbability: {
+            ensembleAverage: awayDrawProb,
+            calibratedRange: {
+              lower: Math.max(0, awayDrawProb - 4),
+              upper: Math.min(100, awayDrawProb + 4),
+            },
+          },
+          impliedProbability: awayDrawImplied,
+          edge: awayDrawEdge,
+          confidenceScore: Math.min(95, Math.abs(awayDrawEdge) * 5 + 55),
+          recommendedStake: {
+            kellyFraction: `${awayDrawKelly.toFixed(2)} Units`,
+            unitDescription: 'Quarter-Kelly formula',
+            percentageOfBankroll: awayDrawKelly,
+          },
+          dataSources,
+        });
+
+        // Home/Away Double Chance (no draw)
+        const homeAwayProb = probabilities.home + probabilities.away;
+        const homeAwayBookmakerOdds = 1 / ((1/homeOdds + 1/awayOdds) * 1.05);
+        const homeAwayImplied = (1 / homeAwayBookmakerOdds) * 100;
+        const homeAwayEdge = homeAwayProb - homeAwayImplied;
+        const homeAwayKelly = this.calculateKellyStake(homeAwayProb / 100, homeAwayBookmakerOdds);
+        
+        markets.push({
+          category: 'double_chance',
+          selection: 'Home or Away (No Draw)',
+          odds: homeAwayBookmakerOdds,
+          bookmaker: game.bookmaker,
+          marketLiquidity: 'Low',
+          calculatedProbability: {
+            ensembleAverage: homeAwayProb,
+            calibratedRange: {
+              lower: Math.max(0, homeAwayProb - 3),
+              upper: Math.min(100, homeAwayProb + 3),
+            },
+          },
+          impliedProbability: homeAwayImplied,
+          edge: homeAwayEdge,
+          confidenceScore: Math.min(95, Math.abs(homeAwayEdge) * 5 + 60),
+          recommendedStake: {
+            kellyFraction: `${homeAwayKelly.toFixed(2)} Units`,
+            unitDescription: 'Quarter-Kelly formula',
+            percentageOfBankroll: homeAwayKelly,
+          },
+          dataSources,
+        });
+      }
+
+      // First Half Markets - half the expected probabilities/odds from full time
+      if (game.odds.moneyline) {
+        const homeOdds = game.odds.moneyline.home;
+        const awayOdds = game.odds.moneyline.away;
+        const drawOdds = game.odds.moneyline.draw;
+        
+        // First half is more uncertain, adjust probabilities towards draw
+        const firstHalfAdjustment = (trueProbBase - 0.5) * 0.6;
+        const htProbabilities = ProbabilityCalculator.calculateThreeWayFromOdds(
+          homeOdds * 1.3, 
+          awayOdds * 1.3, 
+          drawOdds ? drawOdds * 0.7 : undefined,
+          firstHalfAdjustment
+        );
+        
+        // First Half Home Win
+        const htHomeProb = htProbabilities.home;
+        const htHomeOdds = homeOdds * 1.3;
+        const htHomeImplied = (1 / htHomeOdds) * 100;
+        const htHomeEdge = htHomeProb - htHomeImplied;
+        const htHomeKelly = this.calculateKellyStake(htHomeProb / 100, htHomeOdds);
+        
+        markets.push({
+          category: 'first_half',
+          selection: 'HT: Home Win',
+          period: 'first_half',
+          odds: htHomeOdds,
+          bookmaker: game.bookmaker,
+          marketLiquidity: 'Medium',
+          calculatedProbability: {
+            ensembleAverage: htHomeProb,
+            calibratedRange: {
+              lower: Math.max(0, htHomeProb - 7),
+              upper: Math.min(100, htHomeProb + 7),
+            },
+          },
+          impliedProbability: htHomeImplied,
+          edge: htHomeEdge,
+          confidenceScore: Math.min(90, Math.abs(htHomeEdge) * 5 + 45),
+          recommendedStake: {
+            kellyFraction: `${htHomeKelly.toFixed(2)} Units`,
+            unitDescription: 'Quarter-Kelly formula',
+            percentageOfBankroll: htHomeKelly,
+          },
+          dataSources,
+        });
+
+        // First Half Away Win
+        const htAwayProb = htProbabilities.away;
+        const htAwayOdds = awayOdds * 1.3;
+        const htAwayImplied = (1 / htAwayOdds) * 100;
+        const htAwayEdge = htAwayProb - htAwayImplied;
+        const htAwayKelly = this.calculateKellyStake(htAwayProb / 100, htAwayOdds);
+        
+        markets.push({
+          category: 'first_half',
+          selection: 'HT: Away Win',
+          period: 'first_half',
+          odds: htAwayOdds,
+          bookmaker: game.bookmaker,
+          marketLiquidity: 'Medium',
+          calculatedProbability: {
+            ensembleAverage: htAwayProb,
+            calibratedRange: {
+              lower: Math.max(0, htAwayProb - 7),
+              upper: Math.min(100, htAwayProb + 7),
+            },
+          },
+          impliedProbability: htAwayImplied,
+          edge: htAwayEdge,
+          confidenceScore: Math.min(90, Math.abs(htAwayEdge) * 5 + 45),
+          recommendedStake: {
+            kellyFraction: `${htAwayKelly.toFixed(2)} Units`,
+            unitDescription: 'Quarter-Kelly formula',
+            percentageOfBankroll: htAwayKelly,
+          },
+          dataSources,
+        });
+
+        // First Half Draw
+        if (drawOdds) {
+          const htDrawProb = htProbabilities.draw;
+          const htDrawOdds = drawOdds * 0.7;
+          const htDrawImplied = (1 / htDrawOdds) * 100;
+          const htDrawEdge = htDrawProb - htDrawImplied;
+          const htDrawKelly = this.calculateKellyStake(htDrawProb / 100, htDrawOdds);
+          
+          markets.push({
+            category: 'first_half',
+            selection: 'HT: Draw',
+            period: 'first_half',
+            odds: htDrawOdds,
+            bookmaker: game.bookmaker,
+            marketLiquidity: 'Medium',
+            calculatedProbability: {
+              ensembleAverage: htDrawProb,
+              calibratedRange: {
+                lower: Math.max(0, htDrawProb - 6),
+                upper: Math.min(100, htDrawProb + 6),
+              },
+            },
+            impliedProbability: htDrawImplied,
+            edge: htDrawEdge,
+            confidenceScore: Math.min(90, Math.abs(htDrawEdge) * 5 + 42),
+            recommendedStake: {
+              kellyFraction: `${htDrawKelly.toFixed(2)} Units`,
+              unitDescription: 'Quarter-Kelly formula',
+              percentageOfBankroll: htDrawKelly,
+            },
+            dataSources,
+          });
+        }
+      }
+
+      // Correct Score Markets - most likely scores
+      if (game.odds.moneyline) {
+        const probabilities = ProbabilityCalculator.calculateThreeWayFromOdds(
+          game.odds.moneyline.home,
+          game.odds.moneyline.away,
+          game.odds.moneyline.draw,
+          trueProbBase - 0.5
+        );
+        
+        // Common correct scores based on probabilities
+        const correctScores = [
+          { score: '1-0', homeProb: probabilities.home * 0.15, drawProb: 0 },
+          { score: '2-0', homeProb: probabilities.home * 0.12, drawProb: 0 },
+          { score: '2-1', homeProb: probabilities.home * 0.18, drawProb: 0 },
+          { score: '0-1', homeProb: 0, drawProb: 0, awayProb: probabilities.away * 0.15 },
+          { score: '0-2', homeProb: 0, drawProb: 0, awayProb: probabilities.away * 0.12 },
+          { score: '1-2', homeProb: 0, drawProb: 0, awayProb: probabilities.away * 0.18 },
+          { score: '1-1', drawProb: probabilities.draw * 0.30 },
+          { score: '0-0', drawProb: probabilities.draw * 0.25 },
+          { score: '2-2', drawProb: probabilities.draw * 0.15 },
+        ];
+        
+        correctScores.forEach(({ score, homeProb, drawProb, awayProb }) => {
+          const csProb = (homeProb || 0) + (drawProb || 0) + (awayProb || 0);
+          // Simulate realistic bookmaker odds with high margin (15%) for correct score markets
+          const csBookmakerOdds = 1 / ((csProb / 100) * 1.15);
+          const csImplied = (1 / csBookmakerOdds) * 100;
+          const csEdge = csProb - csImplied;
+          const csKelly = this.calculateKellyStake(csProb / 100, csBookmakerOdds);
+          
+          markets.push({
+            category: 'correct_score',
+            selection: `Correct Score: ${score}`,
+            odds: csBookmakerOdds,
+            bookmaker: game.bookmaker,
+            marketLiquidity: 'Low',
+            calculatedProbability: {
+              ensembleAverage: csProb,
+              calibratedRange: {
+                lower: Math.max(0, csProb - 2),
+                upper: Math.min(100, csProb + 2),
+              },
+            },
+            impliedProbability: csImplied,
+            edge: csEdge,
+            confidenceScore: Math.min(85, Math.abs(csEdge) * 5 + 35),
+            recommendedStake: {
+              kellyFraction: `${csKelly.toFixed(2)} Units`,
+              unitDescription: 'Quarter-Kelly formula',
+              percentageOfBankroll: csKelly,
+            },
+            dataSources,
+          });
+        });
+      }
     }
 
     return markets;

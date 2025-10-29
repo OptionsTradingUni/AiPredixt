@@ -140,6 +140,124 @@ export class NewsSentimentService {
   }
 
   /**
+   * Determine news category based on content
+   */
+  categorizeNews(title: string, summary: string): 'injury' | 'form' | 'transfer' | 'tactical' | 'general' {
+    const text = `${title} ${summary}`.toLowerCase();
+    
+    const injuryKeywords = ['injury', 'injured', 'hurt', 'out', 'sidelined', 'ruled out', 'fitness', 'medical', 'surgery', 'recover', 'strain', 'torn', 'fracture', 'suspended', 'ban'];
+    const formKeywords = ['win', 'loss', 'winning', 'losing', 'streak', 'form', 'performance', 'goal', 'score', 'defeat', 'victory', 'unbeaten', 'run'];
+    const transferKeywords = ['transfer', 'sign', 'signing', 'contract', 'deal', 'move', 'join', 'joined', 'loan', 'acquire', 'bid', 'fee', 'announce'];
+    const tacticalKeywords = ['formation', 'tactic', 'strategy', 'lineup', 'starting', 'bench', 'substitute', 'manager', 'coach', 'system', 'approach'];
+    
+    const hasKeywords = (keywords: string[]) => keywords.some(k => text.includes(k));
+    
+    if (hasKeywords(injuryKeywords)) return 'injury';
+    if (hasKeywords(transferKeywords)) return 'transfer';
+    if (hasKeywords(tacticalKeywords)) return 'tactical';
+    if (hasKeywords(formKeywords)) return 'form';
+    
+    return 'general';
+  }
+
+  /**
+   * Calculate relevance based on team mention and keywords
+   */
+  calculateRelevance(text: string, teamName: string): 'high' | 'medium' | 'low' {
+    const lowerText = text.toLowerCase();
+    const lowerTeam = teamName.toLowerCase();
+    
+    const teamMentions = (lowerText.match(new RegExp(lowerTeam, 'g')) || []).length;
+    const textLength = lowerText.split(' ').length;
+    const mentionDensity = teamMentions / textLength;
+    
+    if (teamMentions >= 3 || mentionDensity > 0.05) return 'high';
+    if (teamMentions >= 1 || mentionDensity > 0.02) return 'medium';
+    return 'low';
+  }
+
+  /**
+   * Generate extractive summary from text
+   */
+  generateSummary(text: string, sentences: number = 3): string {
+    const doc = nlp(text);
+    const allSentences = doc.sentences().out('array');
+    
+    if (allSentences.length === 0) return text;
+    
+    const scoredSentences = allSentences.map((sentence: string, index: number) => {
+      const words = sentence.split(' ').length;
+      const hasNumbers = /\d/.test(sentence);
+      const isFirst = index === 0;
+      
+      let score = words * 0.5;
+      if (hasNumbers) score += 10;
+      if (isFirst) score += 15;
+      
+      return { sentence, score };
+    });
+    
+    const topSentences = scoredSentences
+      .sort((a: { sentence: string; score: number }, b: { sentence: string; score: number }) => b.score - a.score)
+      .slice(0, sentences)
+      .map((s: { sentence: string; score: number }) => s.sentence);
+    
+    return topSentences.join(' ');
+  }
+
+  /**
+   * Extract author from HTML if available
+   */
+  extractAuthor($: cheerio.CheerioAPI, elem: any): string | undefined {
+    const authorSelectors = [
+      '.author',
+      '.byline',
+      '[rel="author"]',
+      '.article-author',
+      '.contentItem__author',
+      '.contributor',
+      'meta[name="author"]'
+    ];
+    
+    for (const selector of authorSelectors) {
+      const author = $(elem).find(selector).first().text().trim() || 
+                     $(selector).first().attr('content');
+      if (author) return author;
+    }
+    
+    return undefined;
+  }
+
+  /**
+   * Extract publish date from HTML if available
+   */
+  extractPublishDate($: cheerio.CheerioAPI, elem: any): string {
+    const dateSelectors = [
+      'time',
+      '.timestamp',
+      '.publish-date',
+      '.date',
+      'meta[property="article:published_time"]',
+      'meta[name="publish-date"]'
+    ];
+    
+    for (const selector of dateSelectors) {
+      const dateStr = $(elem).find(selector).first().attr('datetime') || 
+                      $(elem).find(selector).first().text().trim() ||
+                      $(selector).first().attr('content');
+      if (dateStr) {
+        try {
+          return new Date(dateStr).toISOString();
+        } catch {
+          continue;
+        }
+      }
+    }
+    
+    return new Date().toISOString();
+  }
+
+  /**
    * Scrape ESPN news
    */
   async scrapeESPNNews(teamOrLeague: string, sport: string = 'soccer', limit: number = 5): Promise<NewsArticle[]> {
@@ -170,19 +288,22 @@ export class NewsSentimentService {
         const title = $(elem).find('h1, h2, h3, .contentItem__title').first().text().trim();
         const summary = $(elem).find('p, .contentItem__subhead').first().text().trim();
         const link = $(elem).find('a').first().attr('href');
+        const author = this.extractAuthor($, elem);
+        const publishDate = this.extractPublishDate($, elem);
         
         if (title) {
           const fullText = `${title} ${summary}`;
           const sentiment = this.analyzeSentiment(fullText);
           const entities = this.extractEntities(fullText);
           const keywords = this.extractKeywords(fullText, 5);
+          const fullSummary = summary ? this.generateSummary(summary, 2) : undefined;
 
           articles.push({
             title,
             summary: summary || 'No summary available',
             url: link?.startsWith('http') ? link : `https://www.espn.com${link}`,
             source: 'ESPN',
-            publishedAt: new Date().toISOString(),
+            publishedAt: publishDate,
             sentiment,
             entities,
             keywords,
@@ -333,7 +454,7 @@ export class NewsSentimentService {
       distribution.positive === distribution.negative ? 'mixed' :
       'neutral';
 
-    const sources = [...new Set(allArticles.map(a => a.source))];
+    const sources = Array.from(new Set(allArticles.map(a => a.source)));
 
     console.log(`✅ Aggregated ${allArticles.length} articles from ${sources.length} sources`);
     console.log(`📊 Overall sentiment: ${overallClassification} (score: ${averageSentiment.toFixed(2)})`);
@@ -382,8 +503,8 @@ export class NewsSentimentService {
         ? newsResult.articles.reduce((sum, a) => sum + a.sentiment.confidence, 0) / newsResult.articles.length
         : 0,
       recentHeadlines: newsResult.articles.slice(0, 5).map(a => a.title),
-      positiveSignals: [...positiveWords].slice(0, 10),
-      negativeSignals: [...negativeWords].slice(0, 10),
+      positiveSignals: Array.from(positiveWords).slice(0, 10),
+      negativeSignals: Array.from(negativeWords).slice(0, 10),
     };
   }
 }

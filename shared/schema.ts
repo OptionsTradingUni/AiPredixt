@@ -52,8 +52,19 @@ export interface NewsItem {
   timestamp: string;
   sentiment: 'positive' | 'negative' | 'neutral';
   summary: string;
+  fullSummary?: string;
   relevance: 'high' | 'medium' | 'low';
   category: 'injury' | 'form' | 'transfer' | 'tactical' | 'general';
+  author?: string;
+  url?: string;
+  publishDate?: string;
+  confidence?: number;
+  keywords?: string[];
+  entities?: {
+    people?: string[];
+    places?: string[];
+    organizations?: string[];
+  };
 }
 
 export interface Justification {
@@ -82,9 +93,11 @@ export interface ContingencyPick {
 }
 
 export interface BettingMarket {
-  category: 'moneyline' | 'spread' | 'totals' | 'btts' | 'correct_score' | 'half_full' | 'handicap' | 'other';
+  category: 'moneyline' | 'spread' | 'totals' | 'btts' | 'correct_score' | 'half_full' | 'handicap' | 'first_half' | 'asian_handicap' | 'double_chance' | 'player_prop' | 'other';
   selection: string; // e.g., "Home Win", "Over 2.5", "Draw", "Away -1.5"
   line?: number; // For spread/totals (e.g., 2.5, -1.5)
+  period?: 'full_time' | 'first_half' | 'second_half';
+  participant?: string;
   odds: number;
   bookmaker: string;
   marketLiquidity: 'High' | 'Medium' | 'Low';

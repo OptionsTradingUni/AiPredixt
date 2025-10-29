@@ -40,6 +40,7 @@ export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private predictionCache: Map<SportType, { prediction: ApexPrediction; timestamp: number }> = new Map();
   private allGamesCache: Map<SportType, { predictions: ApexPrediction[]; timestamp: number }> = new Map();
+  private gamesCache: { games: Game[]; timestamp: number } | null = null;
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
   private lastScrapingTelemetry: {
     sources: string[];
@@ -247,8 +248,21 @@ export class MemStorage implements IStorage {
   }): Promise<GamesListResponse> {
     const { sport, date, status, league, limit = 100, offset = 0 } = filters;
     
-    // Get real games from scraped odds data across all sports
-    const allGames = await this.getGamesFromScrapedData();
+    // Check cache first
+    let allGames: Game[] = [];
+    const now = Date.now();
+    
+    if (this.gamesCache && (now - this.gamesCache.timestamp) < this.CACHE_TTL) {
+      allGames = this.gamesCache.games;
+    } else {
+      // Get real games from scraped odds data across all sports
+      allGames = await this.getGamesFromScrapedData();
+      // Cache the games
+      this.gamesCache = {
+        games: allGames,
+        timestamp: now,
+      };
+    }
     
     // Apply filters
     let filteredGames = allGames;
@@ -329,14 +343,29 @@ export class MemStorage implements IStorage {
   async getMatchDetail(gameId: string): Promise<import('@shared/schema').MatchDetail | null> {
     try {
       console.log(`🔍 Looking for game with ID: ${gameId}`);
-      const allGames = await this.getGamesFromScrapedData();
-      console.log(`📊 Total games available: ${allGames.length}`);
       
-      const game = allGames.find(g => g.id === gameId);
+      // Use cached games first (same as getGames)
+      let allGames: Game[] = [];
+      const now = Date.now();
+      
+      if (this.gamesCache && (now - this.gamesCache.timestamp) < this.CACHE_TTL) {
+        allGames = this.gamesCache.games;
+        console.log(`📊 Using cached games: ${allGames.length} games`);
+      } else {
+        // If no cache, generate and cache new games
+        allGames = await this.getGamesFromScrapedData();
+        this.gamesCache = {
+          games: allGames,
+          timestamp: now,
+        };
+        console.log(`📊 Generated and cached new games: ${allGames.length} games`);
+      }
+      
+      const game = allGames.find((g: Game) => g.id === gameId);
       
       if (!game) {
         console.log(`❌ Game not found with ID: ${gameId}`);
-        console.log(`📋 Available game IDs (first 10): ${allGames.slice(0, 10).map(g => g.id).join(', ')}`);
+        console.log(`📋 Available game IDs (first 10): ${allGames.slice(0, 10).map((g: Game) => g.id).join(', ')}`);
         return null;
       }
       
@@ -581,8 +610,17 @@ export class DatabaseStorage implements IStorage {
   async getMatchDetail(gameId: string): Promise<import('@shared/schema').MatchDetail | null> {
     try {
       console.log(`🔍 Looking for game with ID: ${gameId}`);
-      const allGames = await this.getGamesFromScrapedData();
-      console.log(`📊 Total games available: ${allGames.length}`);
+      
+      // Use cached games first (same as getGames)
+      let allGames = await this.getCachedGames();
+      
+      if (allGames.length === 0) {
+        // If no cache, generate and cache new games
+        allGames = await this.getGamesFromScrapedData();
+        await this.cacheGames(allGames);
+      }
+      
+      console.log(`📊 Total games available: ${allGames.length} (from cache)`);
       
       const game = allGames.find(g => g.id === gameId);
       

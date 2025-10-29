@@ -14,7 +14,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Get apex prediction
+  // Get apex prediction (single best pick)
   app.get("/api/apex-prediction", async (req, res) => {
     try {
       const sportQuery = req.query.sport as string | undefined;
@@ -28,6 +28,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching apex prediction:', error);
       res.status(500).json({ error: 'Failed to fetch prediction' });
+    }
+  });
+
+  // Get all predictions (all analyzed games)
+  app.get("/api/all-predictions", async (req, res) => {
+    try {
+      const sportQuery = req.query.sport as string | undefined;
+      let sport: SportType | undefined = undefined;
+      if (sportQuery && sportQuery !== 'All') {
+        sport = sportQuery as SportType;
+      }
+      const predictions = await storage.getAllPredictions(sport);
+      res.json(predictions);
+    } catch (error) {
+      console.error('Error fetching all predictions:', error);
+      res.status(500).json({ error: 'Failed to fetch all predictions' });
     }
   });
 

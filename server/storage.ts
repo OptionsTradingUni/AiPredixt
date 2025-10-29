@@ -8,12 +8,14 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getApexPrediction(sport?: SportType): Promise<ApexPrediction>;
+  getAllPredictions(sport?: SportType): Promise<ApexPrediction[]>;
   getHistoricalPerformance(sport?: SportType): Promise<HistoricalPerformance[]>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private predictionCache: Map<SportType, { prediction: ApexPrediction; timestamp: number }> = new Map();
+  private allGamesCache: Map<SportType, { predictions: ApexPrediction[]; timestamp: number }> = new Map();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor() {
@@ -70,6 +72,39 @@ export class MemStorage implements IStorage {
     } catch (error) {
       console.error('❌ Prediction generation failed:', error);
       // Don't fall back to mock - re-throw to show real errors
+      throw error;
+    }
+  }
+
+  async getAllPredictions(sport?: SportType): Promise<ApexPrediction[]> {
+    const targetSport = sport || 'Football';
+    
+    // Check cache first
+    const cached = this.allGamesCache.get(targetSport);
+    const now = Date.now();
+    
+    if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
+      console.log(`✅ Returning cached all-games predictions for ${targetSport} (${cached.predictions.length} games)`);
+      return cached.predictions;
+    }
+
+    try {
+      console.log(`🚀 Analyzing all ${targetSport} games...`);
+      
+      // Generate predictions for ALL games using the full analysis system
+      const predictions = await predictionEngine.analyzeAllGames(targetSport);
+      
+      // Cache the predictions
+      this.allGamesCache.set(targetSport, {
+        predictions,
+        timestamp: now,
+      });
+      
+      console.log(`✅ ${predictions.length} ${targetSport} predictions generated and cached`);
+      return predictions;
+      
+    } catch (error) {
+      console.error('❌ All-games prediction generation failed:', error);
       throw error;
     }
   }

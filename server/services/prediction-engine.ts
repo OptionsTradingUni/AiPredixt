@@ -206,6 +206,63 @@ export class PredictionEngine {
     return prediction;
   }
 
+  // PHASE 4B: Analyze ALL Games (not just top pick)
+  async analyzeAllGames(sport: SportType): Promise<ApexPrediction[]> {
+    console.log(`🎯 Analyzing ALL upcoming ${sport} games...`);
+
+    // Scan all games
+    const shortlist = await this.scanGames(sport);
+
+    if (shortlist.length === 0) {
+      console.log(`⚠️  No high-value games found for ${sport}`);
+      return [];
+    }
+
+    console.log(`📊 Analyzing ${shortlist.length} ${sport} games in parallel...`);
+
+    // Deep dive on ALL shortlisted games (not just top 3)
+    const predictions = await Promise.all(
+      shortlist.map(async (game) => {
+        try {
+          const { gameData, analysis, scrapedIntel, freeSourceData, trueProb } = await this.deepDive(game);
+          const ev = this.calculateEV(trueProb, game.odds.spread?.odds || 2.0);
+          const confidence = this.calculateConfidence(analysis);
+          
+          // Build narrative
+          const narrative = this.buildNarrative(gameData, analysis, `${game.homeTeam} -1.5`);
+          
+          // Calculate stake
+          const odds = game.odds.spread?.odds || 2.0;
+          const stake = this.calculateKellyStake(trueProb, odds);
+          
+          // Build prediction
+          return this.buildApexPrediction(
+            game,
+            gameData,
+            trueProb,
+            ev,
+            confidence,
+            stake,
+            narrative
+          );
+        } catch (error) {
+          console.error(`❌ Failed to analyze ${game.homeTeam} vs ${game.awayTeam}:`, error);
+          return null;
+        }
+      })
+    );
+
+    // Filter out failed predictions and sort by EV (best first)
+    const validPredictions = predictions
+      .filter((p): p is ApexPrediction => p !== null)
+      .sort((a, b) => b.edge - a.edge);
+
+    console.log(`✅ Successfully analyzed ${validPredictions.length} ${sport} games`);
+    console.log(`📊 Top prediction: ${validPredictions[0]?.match} (EV: ${validPredictions[0]?.edge.toFixed(2)}%)`);
+
+    return validPredictions;
+  }
+
   // Helper methods for analysis
 
   private calculateInitialEdge(game: EnhancedOddsData): number {

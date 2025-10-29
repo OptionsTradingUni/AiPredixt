@@ -9,8 +9,10 @@ import { JustificationSection } from '@/components/justification-section';
 import { MarketAnalysisTable } from '@/components/market-analysis-table';
 import { ContingencyPickCard } from '@/components/contingency-pick-card';
 import { HistoricalPerformanceChart } from '@/components/historical-performance-chart';
-import { RefreshCw } from 'lucide-react';
+import { ConfigStatusBanner } from '@/components/config-status-banner';
+import { RefreshCw, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'wouter';
 
 export default function Dashboard() {
   const [selectedSport, setSelectedSport] = useState<SportType | 'All'>('All');
@@ -40,16 +42,29 @@ export default function Dashboard() {
                 <p className="text-xs text-muted-foreground">Prediction Engine</p>
               </div>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => refetch()}
-              data-testid="button-refresh"
-              className="gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Link href="/all-games">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  data-testid="link-all-games"
+                  className="gap-2"
+                >
+                  <List className="h-4 w-4" />
+                  <span className="hidden sm:inline">All Games</span>
+                </Button>
+              </Link>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => refetch()}
+                data-testid="button-refresh"
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span className="hidden sm:inline">Refresh</span>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -66,6 +81,11 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 md:px-8 lg:px-12 py-8">
+        {/* Configuration Status Banner */}
+        <div className="mb-8">
+          <ConfigStatusBanner isRealData={false} />
+        </div>
+
         {isLoading ? (
           <div className="space-y-8">
             <div className="h-96 rounded-lg bg-card animate-pulse" />

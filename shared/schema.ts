@@ -104,3 +104,43 @@ export interface HistoricalPerformance {
 }
 
 export type SelectApexPrediction = ApexPrediction;
+
+// Game Listing Types
+export interface Game {
+  id: string;
+  sport: SportType;
+  league: string;
+  date: string; // ISO date
+  time: string; // HH:mm
+  teams: {
+    home: string;
+    away: string;
+  };
+  status: 'upcoming' | 'live' | 'finished';
+  currentScore?: {
+    home: number;
+    away: number;
+  };
+  odds: {
+    home: number;
+    draw?: number;
+    away: number;
+  };
+  predictionAvailable: boolean;
+  confidence?: number; // 0-100
+  bestBet?: {
+    type: string;
+    odds: number;
+    ev: number; // Expected value %
+  };
+}
+
+export interface GamesListResponse {
+  games: Game[];
+  total: number;
+  filteredCount: number;
+  dateRange: {
+    from: string;
+    to: string;
+  };
+}

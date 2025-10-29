@@ -64,6 +64,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get games list with filtering
+  app.get("/api/games", async (req, res) => {
+    try {
+      const sportQuery = req.query.sport as string | undefined;
+      const dateFilter = req.query.date as string | undefined;
+      const statusFilter = req.query.status as 'upcoming' | 'live' | 'finished' | undefined;
+      const leagueFilter = req.query.league as string | undefined;
+      const limitParam = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const offsetParam = req.query.offset ? parseInt(req.query.offset as string) : 0;
+      
+      let sport: SportType | undefined = undefined;
+      if (sportQuery && sportQuery !== 'All') {
+        sport = sportQuery as SportType;
+      }
+
+      const games = await storage.getGames({
+        sport,
+        date: dateFilter,
+        status: statusFilter,
+        league: leagueFilter,
+        limit: limitParam,
+        offset: offsetParam,
+      });
+      
+      res.json(games);
+    } catch (error) {
+      console.error('Error fetching games:', error);
+      res.status(500).json({ error: 'Failed to fetch games' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type ApexPrediction, type HistoricalPerformance, type SportType } from "@shared/schema";
+import { type User, type InsertUser, type ApexPrediction, type HistoricalPerformance, type SportType, type Game, type GamesListResponse } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { predictionEngine } from "./services/prediction-engine";
 import { historicalService } from "./services/historical-service";
@@ -10,6 +10,14 @@ export interface IStorage {
   getApexPrediction(sport?: SportType): Promise<ApexPrediction>;
   getAllPredictions(sport?: SportType): Promise<ApexPrediction[]>;
   getHistoricalPerformance(sport?: SportType): Promise<HistoricalPerformance[]>;
+  getGames(filters: {
+    sport?: SportType;
+    date?: 'today' | 'tomorrow' | 'upcoming' | 'past' | string;
+    status?: 'upcoming' | 'live' | 'finished';
+    league?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<GamesListResponse>;
 }
 
 export class MemStorage implements IStorage {
@@ -533,6 +541,337 @@ export class MemStorage implements IStorage {
         },
       },
     ];
+  }
+
+  async getGames(filters: {
+    sport?: SportType;
+    date?: 'today' | 'tomorrow' | 'upcoming' | 'past' | string;
+    status?: 'upcoming' | 'live' | 'finished';
+    league?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<GamesListResponse> {
+    const { sport, date, status, league, limit = 100, offset = 0 } = filters;
+    
+    // Generate comprehensive game database (500+ games across all sports and dates)
+    const allGames = this.generateComprehensiveGames();
+    
+    // Apply filters
+    let filteredGames = allGames;
+    
+    if (sport) {
+      filteredGames = filteredGames.filter(g => g.sport === sport);
+    }
+    
+    if (league) {
+      filteredGames = filteredGames.filter(g => g.league === league);
+    }
+    
+    if (status) {
+      filteredGames = filteredGames.filter(g => g.status === status);
+    }
+    
+    // Date filtering
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfterTomorrow = new Date(today);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+    
+    if (date) {
+      if (date === 'today') {
+        filteredGames = filteredGames.filter(g => {
+          const gameDate = new Date(g.date);
+          gameDate.setHours(0, 0, 0, 0);
+          return gameDate.getTime() === today.getTime();
+        });
+      } else if (date === 'tomorrow') {
+        filteredGames = filteredGames.filter(g => {
+          const gameDate = new Date(g.date);
+          gameDate.setHours(0, 0, 0, 0);
+          return gameDate.getTime() === tomorrow.getTime();
+        });
+      } else if (date === 'upcoming') {
+        filteredGames = filteredGames.filter(g => {
+          const gameDate = new Date(g.date);
+          return gameDate >= today;
+        });
+      } else if (date === 'past') {
+        filteredGames = filteredGames.filter(g => {
+          const gameDate = new Date(g.date);
+          return gameDate < today;
+        });
+      } else {
+        // Specific date
+        filteredGames = filteredGames.filter(g => g.date === date);
+      }
+    }
+    
+    // Sort by date/time
+    filteredGames.sort((a, b) => {
+      const dateA = new Date(`${a.date}T${a.time}`);
+      const dateB = new Date(`${b.date}T${b.time}`);
+      return dateA.getTime() - dateB.getTime();
+    });
+    
+    const total = allGames.length;
+    const filteredCount = filteredGames.length;
+    
+    // Apply pagination
+    const paginatedGames = filteredGames.slice(offset, offset + limit);
+    
+    return {
+      games: paginatedGames,
+      total,
+      filteredCount,
+      dateRange: {
+        from: filteredGames[0]?.date || today.toISOString().split('T')[0],
+        to: filteredGames[filteredGames.length - 1]?.date || dayAfterTomorrow.toISOString().split('T')[0],
+      },
+    };
+  }
+
+  private generateComprehensiveGames(): Game[] {
+    const games: Game[] = [];
+    const today = new Date();
+    
+    // Generate games for -7 days to +30 days
+    for (let dayOffset = -7; dayOffset <= 30; dayOffset++) {
+      const gameDate = new Date(today);
+      gameDate.setDate(gameDate.getDate() + dayOffset);
+      const dateStr = gameDate.toISOString().split('T')[0];
+      
+      // Determine status based on date
+      const isPast = dayOffset < 0;
+      const isToday = dayOffset === 0;
+      const status = isPast ? 'finished' : (isToday ? Math.random() > 0.5 ? 'live' : 'upcoming' : 'upcoming');
+      
+      // Football games (5-8 per day)
+      const footballCount = Math.floor(Math.random() * 4) + 5;
+      for (let i = 0; i < footballCount; i++) {
+        games.push(this.generateFootballGame(dateStr, status));
+      }
+      
+      // Basketball games (4-6 per day)
+      const basketballCount = Math.floor(Math.random() * 3) + 4;
+      for (let i = 0; i < basketballCount; i++) {
+        games.push(this.generateBasketballGame(dateStr, status));
+      }
+      
+      // Tennis games (6-10 per day)
+      const tennisCount = Math.floor(Math.random() * 5) + 6;
+      for (let i = 0; i < tennisCount; i++) {
+        games.push(this.generateTennisGame(dateStr, status));
+      }
+      
+      // Hockey games (3-5 per day)
+      const hockeyCount = Math.floor(Math.random() * 3) + 3;
+      for (let i = 0; i < hockeyCount; i++) {
+        games.push(this.generateHockeyGame(dateStr, status));
+      }
+    }
+    
+    return games;
+  }
+
+  private generateFootballGame(date: string, status: 'upcoming' | 'live' | 'finished'): Game {
+    const footballTeams = [
+      'Manchester City', 'Liverpool', 'Arsenal', 'Chelsea', 'Manchester United', 'Tottenham',
+      'Newcastle', 'Brighton', 'Aston Villa', 'West Ham', 'Everton', 'Leicester',
+      'Barcelona', 'Real Madrid', 'Atletico Madrid', 'Sevilla', 'Valencia', 'Villarreal',
+      'Bayern Munich', 'Dortmund', 'RB Leipzig', 'Leverkusen', 'Frankfurt', 'Union Berlin',
+      'PSG', 'Marseille', 'Monaco', 'Lyon', 'Lille', 'Nice',
+      'Inter Milan', 'AC Milan', 'Juventus', 'Roma', 'Napoli', 'Lazio',
+    ];
+    
+    const leagues = ['Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1'];
+    const home = footballTeams[Math.floor(Math.random() * footballTeams.length)];
+    let away = footballTeams[Math.floor(Math.random() * footballTeams.length)];
+    while (away === home) {
+      away = footballTeams[Math.floor(Math.random() * footballTeams.length)];
+    }
+    
+    const hour = Math.floor(Math.random() * 12) + 10; // 10-22
+    const minute = [0, 15, 30, 45][Math.floor(Math.random() * 4)];
+    
+    const homeOdds = 1.5 + Math.random() * 2.5; // 1.5-4.0
+    const awayOdds = 1.5 + Math.random() * 2.5;
+    const drawOdds = 3.0 + Math.random() * 2.0; // 3.0-5.0
+    
+    const confidence = Math.floor(Math.random() * 30) + 60; // 60-90
+    const ev = Math.random() * 40 - 5; // -5% to 35%
+    
+    return {
+      id: randomUUID(),
+      sport: 'Football',
+      league: leagues[Math.floor(Math.random() * leagues.length)],
+      date,
+      time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
+      teams: { home, away },
+      status,
+      currentScore: status === 'live' || status === 'finished' ? {
+        home: Math.floor(Math.random() * 4),
+        away: Math.floor(Math.random() * 4),
+      } : undefined,
+      odds: {
+        home: parseFloat(homeOdds.toFixed(2)),
+        draw: parseFloat(drawOdds.toFixed(2)),
+        away: parseFloat(awayOdds.toFixed(2)),
+      },
+      predictionAvailable: Math.random() > 0.3, // 70% have predictions
+      confidence,
+      bestBet: ev > 10 ? {
+        type: Math.random() > 0.5 ? 'Home Win' : 'Over 2.5 Goals',
+        odds: parseFloat((1.8 + Math.random() * 1.2).toFixed(2)),
+        ev: parseFloat(ev.toFixed(1)),
+      } : undefined,
+    };
+  }
+
+  private generateBasketballGame(date: string, status: 'upcoming' | 'live' | 'finished'): Game {
+    const nbaTeams = [
+      'Lakers', 'Warriors', 'Celtics', 'Bucks', 'Heat', 'Nuggets',
+      'Suns', 'Mavericks', 'Clippers', '76ers', 'Knicks', 'Nets',
+      'Raptors', 'Bulls', 'Cavaliers', 'Hawks', 'Wizards', 'Hornets',
+    ];
+    
+    const home = nbaTeams[Math.floor(Math.random() * nbaTeams.length)];
+    let away = nbaTeams[Math.floor(Math.random() * nbaTeams.length)];
+    while (away === home) {
+      away = nbaTeams[Math.floor(Math.random() * nbaTeams.length)];
+    }
+    
+    const hour = Math.floor(Math.random() * 6) + 18; // 18-23
+    const minute = [0, 30][Math.floor(Math.random() * 2)];
+    
+    const homeOdds = 1.6 + Math.random() * 1.8;
+    const awayOdds = 1.6 + Math.random() * 1.8;
+    
+    const confidence = Math.floor(Math.random() * 25) + 65;
+    const ev = Math.random() * 35 - 3;
+    
+    return {
+      id: randomUUID(),
+      sport: 'Basketball',
+      league: 'NBA',
+      date,
+      time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
+      teams: { home, away },
+      status,
+      currentScore: status === 'live' || status === 'finished' ? {
+        home: Math.floor(Math.random() * 50) + 80,
+        away: Math.floor(Math.random() * 50) + 80,
+      } : undefined,
+      odds: {
+        home: parseFloat(homeOdds.toFixed(2)),
+        away: parseFloat(awayOdds.toFixed(2)),
+      },
+      predictionAvailable: Math.random() > 0.25,
+      confidence,
+      bestBet: ev > 12 ? {
+        type: Math.random() > 0.5 ? `${home} -5.5` : 'Over 215.5',
+        odds: parseFloat((1.85 + Math.random() * 0.25).toFixed(2)),
+        ev: parseFloat(ev.toFixed(1)),
+      } : undefined,
+    };
+  }
+
+  private generateTennisGame(date: string, status: 'upcoming' | 'live' | 'finished'): Game {
+    const tennisPlayers = [
+      'Djokovic', 'Alcaraz', 'Medvedev', 'Sinner', 'Rublev', 'Tsitsipas',
+      'Rune', 'Fritz', 'Zverev', 'Ruud', 'Shelton', 'Hurkacz',
+      'Swiatek', 'Sabalenka', 'Gauff', 'Rybakina', 'Jabeur', 'Pegula',
+    ];
+    
+    const home = tennisPlayers[Math.floor(Math.random() * tennisPlayers.length)];
+    let away = tennisPlayers[Math.floor(Math.random() * tennisPlayers.length)];
+    while (away === home) {
+      away = tennisPlayers[Math.floor(Math.random() * tennisPlayers.length)];
+    }
+    
+    const tournaments = ['ATP Masters 1000', 'WTA 1000', 'ATP 500', 'WTA 500', 'Grand Slam'];
+    const hour = Math.floor(Math.random() * 10) + 10;
+    const minute = [0, 30][Math.floor(Math.random() * 2)];
+    
+    const homeOdds = 1.4 + Math.random() * 2.0;
+    const awayOdds = 1.4 + Math.random() * 2.0;
+    
+    const confidence = Math.floor(Math.random() * 28) + 62;
+    const ev = Math.random() * 38 - 4;
+    
+    return {
+      id: randomUUID(),
+      sport: 'Tennis',
+      league: tournaments[Math.floor(Math.random() * tournaments.length)],
+      date,
+      time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
+      teams: { home, away },
+      status,
+      currentScore: status === 'live' || status === 'finished' ? {
+        home: Math.floor(Math.random() * 3),
+        away: Math.floor(Math.random() * 3),
+      } : undefined,
+      odds: {
+        home: parseFloat(homeOdds.toFixed(2)),
+        away: parseFloat(awayOdds.toFixed(2)),
+      },
+      predictionAvailable: Math.random() > 0.35,
+      confidence,
+      bestBet: ev > 11 ? {
+        type: `${home} to Win`,
+        odds: parseFloat(homeOdds.toFixed(2)),
+        ev: parseFloat(ev.toFixed(1)),
+      } : undefined,
+    };
+  }
+
+  private generateHockeyGame(date: string, status: 'upcoming' | 'live' | 'finished'): Game {
+    const nhlTeams = [
+      'Bruins', 'Maple Leafs', 'Lightning', 'Panthers', 'Rangers', 'Devils',
+      'Hurricanes', 'Islanders', 'Penguins', 'Capitals', 'Avalanche', 'Stars',
+      'Jets', 'Oilers', 'Flames', 'Knights', 'Wild', 'Predators',
+    ];
+    
+    const home = nhlTeams[Math.floor(Math.random() * nhlTeams.length)];
+    let away = nhlTeams[Math.floor(Math.random() * nhlTeams.length)];
+    while (away === home) {
+      away = nhlTeams[Math.floor(Math.random() * nhlTeams.length)];
+    }
+    
+    const hour = Math.floor(Math.random() * 5) + 18;
+    const minute = [0, 30][Math.floor(Math.random() * 2)];
+    
+    const homeOdds = 1.7 + Math.random() * 1.5;
+    const awayOdds = 1.7 + Math.random() * 1.5;
+    
+    const confidence = Math.floor(Math.random() * 27) + 63;
+    const ev = Math.random() * 32 - 2;
+    
+    return {
+      id: randomUUID(),
+      sport: 'Hockey',
+      league: 'NHL',
+      date,
+      time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
+      teams: { home, away },
+      status,
+      currentScore: status === 'live' || status === 'finished' ? {
+        home: Math.floor(Math.random() * 6),
+        away: Math.floor(Math.random() * 6),
+      } : undefined,
+      odds: {
+        home: parseFloat(homeOdds.toFixed(2)),
+        away: parseFloat(awayOdds.toFixed(2)),
+      },
+      predictionAvailable: Math.random() > 0.3,
+      confidence,
+      bestBet: ev > 13 ? {
+        type: Math.random() > 0.5 ? `${away} Moneyline` : 'Over 5.5',
+        odds: parseFloat((1.9 + Math.random() * 0.4).toFixed(2)),
+        ev: parseFloat(ev.toFixed(1)),
+      } : undefined,
+    };
   }
 }
 

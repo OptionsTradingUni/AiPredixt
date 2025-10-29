@@ -74,24 +74,25 @@ export class MemStorage implements IStorage {
     return user;
   }
 
-  async getApexPrediction(sport?: SportType): Promise<ApexPrediction> {
+  async getApexPrediction(sport?: SportType, dateFilter?: string): Promise<ApexPrediction> {
     const targetSport = sport || 'Football';
     
-    // Check cache first
-    const cached = this.predictionCache.get(targetSport);
+    // Check cache first (cache key includes date filter)
+    const cacheKey = `${targetSport}-${dateFilter || 'all'}`;
+    const cached = this.predictionCache.get(cacheKey as any);
     const now = Date.now();
     
     if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
-      console.log(`✅ Returning cached prediction for ${targetSport}`);
+      console.log(`✅ Returning cached prediction for ${targetSport}${dateFilter ? ` (${dateFilter})` : ''}`);
       return cached.prediction;
     }
 
     try {
-      console.log(`🚀 Generating prediction for ${targetSport} using 6-phase system...`);
+      console.log(`🚀 Generating prediction for ${targetSport} using 6-phase system${dateFilter ? ` (date: ${dateFilter})` : ''}...`);
       console.log(`📡 Free APIs: Odds API (${process.env.ODDS_API_KEY ? 'configured' : 'not configured'}), API-Football (${process.env.API_FOOTBALL_KEY ? 'configured' : 'not configured'})`);
       
       // Generate prediction using the full 6-phase system
-      const { prediction, telemetry } = await predictionEngine.selectApexPick(targetSport);
+      const { prediction, telemetry } = await predictionEngine.selectApexPick(targetSport, dateFilter);
       
       // Update telemetry with actual data sources used
       if (telemetry) {
@@ -99,7 +100,7 @@ export class MemStorage implements IStorage {
       }
       
       // Cache the prediction
-      this.predictionCache.set(targetSport, {
+      this.predictionCache.set(cacheKey as any, {
         prediction,
         timestamp: now,
       });
@@ -115,23 +116,24 @@ export class MemStorage implements IStorage {
     }
   }
 
-  async getAllPredictions(sport?: SportType): Promise<ApexPrediction[]> {
+  async getAllPredictions(sport?: SportType, dateFilter?: string): Promise<ApexPrediction[]> {
     const targetSport = sport || 'Football';
     
-    // Check cache first
-    const cached = this.allGamesCache.get(targetSport);
+    // Check cache first (cache key includes date filter)
+    const cacheKey = `${targetSport}-${dateFilter || 'all'}`;
+    const cached = this.allGamesCache.get(cacheKey as any);
     const now = Date.now();
     
     if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
-      console.log(`✅ Returning cached all-games predictions for ${targetSport} (${cached.predictions.length} games)`);
+      console.log(`✅ Returning cached all-games predictions for ${targetSport}${dateFilter ? ` (${dateFilter})` : ''} (${cached.predictions.length} games)`);
       return cached.predictions;
     }
 
     try {
-      console.log(`🚀 Analyzing all ${targetSport} games...`);
+      console.log(`🚀 Analyzing all ${targetSport} games${dateFilter ? ` (date: ${dateFilter})` : ''}...`);
       
       // Generate predictions for ALL games using the full analysis system
-      const { predictions, telemetry } = await predictionEngine.analyzeAllGames(targetSport);
+      const { predictions, telemetry } = await predictionEngine.analyzeAllGames(targetSport, dateFilter);
       
       // Update telemetry with actual data sources used
       if (telemetry) {
@@ -139,7 +141,7 @@ export class MemStorage implements IStorage {
       }
       
       // Cache the predictions
-      this.allGamesCache.set(targetSport, {
+      this.allGamesCache.set(cacheKey as any, {
         predictions,
         timestamp: now,
       });

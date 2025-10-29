@@ -53,8 +53,8 @@ export class EnhancedOddsService {
     this.enabled = API_CONFIG.oddsApi.enabled;
   }
 
-  async getOdds(sport: 'soccer' | 'basketball' | 'icehockey' | 'tennis'): Promise<EnhancedOddsData[]> {
-    console.log(`📊 Fetching odds for ${sport} from ALL sources in parallel...`);
+  async getOdds(sport: 'soccer' | 'basketball' | 'icehockey' | 'tennis', dateFilter?: string): Promise<EnhancedOddsData[]> {
+    console.log(`📊 Fetching odds for ${sport} from ALL sources in parallel${dateFilter ? ` (date: ${dateFilter})` : ''}...`);
 
     // Fetch from ALL sources in parallel for maximum coverage
     const results = await Promise.allSettled([
@@ -83,10 +83,55 @@ export class EnhancedOddsService {
     });
 
     // Remove duplicates by gameId/matchup
-    const uniqueGames = this.deduplicateGames(allGames);
+    let uniqueGames = this.deduplicateGames(allGames);
+
+    // Apply date filter if specified
+    if (dateFilter) {
+      uniqueGames = this.filterGamesByDate(uniqueGames, dateFilter);
+      console.log(`📅 Filtered to ${uniqueGames.length} games for ${dateFilter}`);
+    }
     
     console.log(`✅ Total: ${uniqueGames.length} unique games from ${sources.length} sources: ${sources.join(', ')}`);
     return uniqueGames;
+  }
+
+  private filterGamesByDate(games: EnhancedOddsData[], dateFilter: string): EnhancedOddsData[] {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfter = new Date(today);
+    dayAfter.setDate(dayAfter.getDate() + 2);
+
+    return games.filter(game => {
+      const gameDate = new Date(game.gameTime);
+      const gameDateOnly = new Date(gameDate.getFullYear(), gameDate.getMonth(), gameDate.getDate());
+
+      switch (dateFilter) {
+        case 'today':
+          return gameDateOnly.getTime() === today.getTime();
+        case 'tomorrow':
+          return gameDateOnly.getTime() === tomorrow.getTime();
+        case 'day-after':
+          return gameDateOnly.getTime() === dayAfter.getTime();
+        case 'upcoming':
+          // Next 7 days
+          const weekFromNow = new Date(today);
+          weekFromNow.setDate(weekFromNow.getDate() + 7);
+          return gameDateOnly >= today && gameDateOnly < weekFromNow;
+        case 'past':
+          return gameDateOnly < today;
+        default:
+          // Specific date in YYYY-MM-DD format
+          try {
+            const targetDate = new Date(dateFilter);
+            const targetDateOnly = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+            return gameDateOnly.getTime() === targetDateOnly.getTime();
+          } catch {
+            return true; // Invalid format, return all
+          }
+      }
+    });
   }
 
   private async getOddsFromAPI(sport: string): Promise<EnhancedOddsData[]> {

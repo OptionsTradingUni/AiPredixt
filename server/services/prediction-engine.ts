@@ -7,7 +7,7 @@ import { ApexPrediction, SportType } from '@shared/schema';
 
 export class PredictionEngine {
   // PHASE 1: Omniscience Scan - Triage and shortlist games
-  async scanGames(sport: SportType): Promise<EnhancedOddsData[]> {
+  async scanGames(sport: SportType, dateFilter?: string): Promise<EnhancedOddsData[]> {
     console.log(`🔍 PHASE 1: Scanning ${sport} games with MULTI-SOURCE data...`);
     
     const sportMap: Record<SportType, string> = {
@@ -18,7 +18,7 @@ export class PredictionEngine {
     };
 
     // Use enhanced odds service with multi-source fallback
-    const oddsData = await enhancedOddsService.getOdds(sportMap[sport] as any);
+    const oddsData = await enhancedOddsService.getOdds(sportMap[sport] as any, dateFilter);
     
     console.log(`📊 Retrieved ${oddsData.length} games from sources: ${oddsData[0]?.sources.join(', ') || 'multiple'}`);
     
@@ -44,18 +44,28 @@ export class PredictionEngine {
     console.log(`📡 Data sources for this game: ${game.sources.join(', ')}`);
 
     // Get FREE data from multiple sources in parallel
-    const [initialGameData, freeHomeData, freeAwayData] = await Promise.all([
-      sportsDataService.getGameData(game.gameId, game.sport),
+    const [freeHomeData, freeAwayData] = await Promise.all([
       freeSourcesScraper.gatherAllFreeData(game.homeTeam, game.sport, game.league),
       freeSourcesScraper.gatherAllFreeData(game.awayTeam, game.sport, game.league),
     ]);
 
-    // Use real game data from APIs/scraping only - no simulation fallback
-    const gameData = initialGameData;
+    // Combine free source data
+    const freeSourceData = {
+      home: freeHomeData,
+      away: freeAwayData,
+      totalSources: freeHomeData.totalSources + freeAwayData.totalSources,
+    };
+
+    // Build game data from API (if available) OR from scraped sources
+    const gameData = await sportsDataService.getGameData(game.gameId, game.sport, game, freeSourceData);
+    
     if (!gameData) {
       console.log('❌ No game data available from APIs/scraping - skipping game');
       throw new Error(`No game data available for ${game.homeTeam} vs ${game.awayTeam}`);
     }
+
+    console.log(`✅ Game data built from ${freeSourceData.totalSources} FREE sources + odds data from ${game.sources.join(', ')}`);
+
 
     // SCRAPE EVERYTHING from the internet for this match
     console.log(`🕷️  Initiating comprehensive web scraping from 20+ sources...`);
@@ -66,13 +76,6 @@ export class PredictionEngine {
       game.league,
       gameData?.venue
     );
-
-    // Combine free source data
-    const freeSourceData = {
-      home: freeHomeData,
-      away: freeAwayData,
-      totalSources: freeHomeData.totalSources + freeAwayData.totalSources,
-    };
 
     // ANALYZE 490+ ADVANCED FACTORS that bookmakers ignore
     console.log(`🔬  Analyzing 490+ advanced factors...`);
@@ -131,14 +134,14 @@ export class PredictionEngine {
   }
 
   // PHASE 4: Final Selection & Risk Management
-  async selectApexPick(sport: SportType): Promise<{ 
+  async selectApexPick(sport: SportType, dateFilter?: string): Promise<{ 
     prediction: ApexPrediction; 
     telemetry: { sources: string[]; totalGames: number; apis: { oddsApi: boolean; sportsApi: boolean } } 
   }> {
     console.log(`🎯 PHASE 4: Selecting Apex Pick for ${sport}...`);
 
     // Scan all games
-    const shortlist = await this.scanGames(sport);
+    const shortlist = await this.scanGames(sport, dateFilter);
 
     if (shortlist.length === 0) {
       throw new Error('No high-value games found');
@@ -195,14 +198,14 @@ export class PredictionEngine {
   }
 
   // PHASE 4B: Analyze ALL Games (not just top pick)
-  async analyzeAllGames(sport: SportType): Promise<{ 
+  async analyzeAllGames(sport: SportType, dateFilter?: string): Promise<{ 
     predictions: ApexPrediction[]; 
     telemetry: { sources: string[]; totalGames: number; apis: { oddsApi: boolean; sportsApi: boolean } } 
   }> {
     console.log(`🎯 Analyzing ALL upcoming ${sport} games...`);
 
     // Scan all games
-    const shortlist = await this.scanGames(sport);
+    const shortlist = await this.scanGames(sport, dateFilter);
 
     if (shortlist.length === 0) {
       console.log(`⚠️  No high-value games found for ${sport}`);

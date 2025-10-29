@@ -42,42 +42,95 @@ export class SportsDataService {
     this.enabled = API_CONFIG.sportsApi.enabled;
   }
 
-  async getGameData(gameId: string, sport: string): Promise<GameData | null> {
-    if (!this.enabled) {
-      console.log('⚠️  API-Football not configured - set API_FOOTBALL_KEY in .env');
-      return null; // Return null when API not configured
+  async getGameData(gameId: string, sport: string, enrichedOddsData?: any, freeSourceData?: any): Promise<GameData | null> {
+    if (this.enabled) {
+      try {
+        console.log(`📡 Fetching live data from API-Football for game ${gameId}...`);
+        
+        // Real API-Football request
+        const response = await axios.get(`${this.baseUrl}/fixtures`, {
+          headers: {
+            'x-rapidapi-key': this.apiKey,
+            'x-rapidapi-host': 'v3.football.api-sports.io',
+          },
+          params: {
+            id: gameId,
+          },
+          timeout: 10000,
+        });
+
+        if (response.data?.response?.[0]) {
+          const fixture = response.data.response[0];
+          console.log(`✅ Live game data fetched from API-Football`);
+          
+          return this.parseApiFootballData(fixture, sport);
+        }
+
+        console.log('⚠️  No data returned from API-Football');
+        
+      } catch (error: any) {
+        console.error(`❌ API-Football error: ${error.message}`);
+      }
     }
 
-    try {
-      console.log(`📡 Fetching live data from API-Football for game ${gameId}...`);
-      
-      // Real API-Football request
-      const response = await axios.get(`${this.baseUrl}/fixtures`, {
-        headers: {
-          'x-rapidapi-key': this.apiKey,
-          'x-rapidapi-host': 'v3.football.api-sports.io',
-        },
-        params: {
-          id: gameId,
-        },
-        timeout: 10000,
+    if (enrichedOddsData && freeSourceData) {
+      console.log(`✅ Building game data from FREE sources (TheSportsDB, FBref, Sofascore, etc.)`);
+      return this.buildFromScrapedData(enrichedOddsData, freeSourceData, sport);
+    }
+
+    console.log('⚠️  API-Football not configured - set API_FOOTBALL_KEY in .env');
+    return null;
+  }
+
+  buildFromScrapedData(oddsData: any, freeData: any, sport: string): GameData {
+    const homeData = freeData.home?.sources || [];
+    const awayData = freeData.away?.sources || [];
+
+    const extractTeamStats = (teamName: string, sources: any[]): TeamStats => {
+      let stats: any = {};
+
+      sources.forEach((source: any) => {
+        if (source.source === 'TheSportsDB' && source.data) {
+          stats = { ...stats, ...source.data };
+        }
+        if (source.source === 'FBref' && source.data) {
+          stats = { ...stats, ...source.data };
+        }
+        if (source.source === 'Sofascore' && source.data) {
+          stats = { ...stats, ...source.data };
+        }
       });
 
-      if (response.data?.response?.[0]) {
-        const fixture = response.data.response[0];
-        console.log(`✅ Live game data fetched from API-Football`);
-        
-        return this.parseApiFootballData(fixture, sport);
-      }
+      return {
+        teamName,
+        form: stats.strForm || stats.form || 'UNKNOWN',
+        goalsFor: parseInt(stats.intScoreFor || stats.goalsFor || '0'),
+        goalsAgainst: parseInt(stats.intScoreAgainst || stats.goalsAgainst || '0'),
+        wins: parseInt(stats.intWin || stats.wins || '0'),
+        losses: parseInt(stats.intLoss || stats.losses || '0'),
+        draws: parseInt(stats.intDraw || stats.draws || '0'),
+        streak: stats.strRecentForm || stats.streak || 'Unknown',
+      };
+    };
 
-      console.log('⚠️  No data returned from API-Football');
-      return null;
-      
-    } catch (error: any) {
-      console.error(`❌ API-Football error: ${error.message}`);
-      // Don't fall back to mock - return null to indicate data unavailable
-      return null;
-    }
+    return {
+      gameId: oddsData.gameId,
+      sport: sport,
+      league: oddsData.league || 'Unknown League',
+      homeTeam: oddsData.homeTeam,
+      awayTeam: oddsData.awayTeam,
+      gameTime: oddsData.gameTime,
+      venue: oddsData.venue || 'Unknown Venue',
+      homeStats: extractTeamStats(oddsData.homeTeam, homeData),
+      awayStats: extractTeamStats(oddsData.awayTeam, awayData),
+      headToHead: [],
+      injuries: [],
+      weather: {
+        temp: 15,
+        condition: 'Clear',
+        wind: 10,
+      },
+    };
   }
 
   private parseApiFootballData(fixture: any, sport: string): GameData {

@@ -18,12 +18,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/apex-prediction", async (req, res) => {
     try {
       const sportQuery = req.query.sport as string | undefined;
+      const dateFilter = req.query.date as string | undefined;
       // Handle 'All' as undefined to get default prediction
       let sport: SportType | undefined = undefined;
       if (sportQuery && sportQuery !== 'All') {
         sport = sportQuery as SportType;
       }
-      const prediction = await storage.getApexPrediction(sport);
+      const prediction = await storage.getApexPrediction(sport, dateFilter);
       res.json(prediction);
     } catch (error) {
       console.error('Error fetching apex prediction:', error);
@@ -35,11 +36,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/all-predictions", async (req, res) => {
     try {
       const sportQuery = req.query.sport as string | undefined;
+      const dateFilter = req.query.date as string | undefined;
       let sport: SportType | undefined = undefined;
       if (sportQuery && sportQuery !== 'All') {
         sport = sportQuery as SportType;
       }
-      const predictions = await storage.getAllPredictions(sport);
+      const predictions = await storage.getAllPredictions(sport, dateFilter);
       res.json(predictions);
     } catch (error) {
       console.error('Error fetching all predictions:', error);

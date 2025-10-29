@@ -39,7 +39,7 @@ export function ContingencyPickCard({ contingency }: ContingencyPickCardProps) {
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Confidence</p>
             <p className="text-xl font-bold font-mono" data-testid="text-contingency-confidence">
-              {contingency.confidenceScore}
+              {Math.round(contingency.confidenceScore)}
             </p>
           </div>
         </div>

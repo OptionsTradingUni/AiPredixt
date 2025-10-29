@@ -78,30 +78,45 @@ export class HistoricalService {
     }
   }
 
-  // Get historical performance data
+  // Get historical performance data from logged results
   getPerformance(sport?: SportType): HistoricalPerformance[] {
-    // Generate synthetic historical data for demonstration
-    const days = 30;
-    const data: HistoricalPerformance[] = [];
-    
-    for (let i = days; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      
-      // Simulate improving performance over time
-      const baseAccuracy = 55 + (30 - i) * 0.5;
-      const baseROI = 3 + (30 - i) * 0.3;
-      
-      data.push({
-        date: date.toISOString().split('T')[0],
-        sport: sport || 'Football',
-        accuracy: Math.min(75, baseAccuracy + Math.random() * 5),
-        roi: Math.min(20, baseROI + Math.random() * 2),
-        confidenceScore: 70 + Math.random() * 15,
-      });
+    const filtered = sport
+      ? this.results.filter(r => r.sport === sport)
+      : this.results;
+
+    if (filtered.length === 0) {
+      // Return empty array if no real data yet
+      // This forces the app to show "No historical data" instead of fake trends
+      return [];
     }
-    
-    return data;
+
+    // Group results by date
+    const byDate = new Map<string, PredictionResult[]>();
+    filtered.forEach(result => {
+      const date = new Date(result.predictionId).toISOString().split('T')[0];
+      if (!byDate.has(date)) {
+        byDate.set(date, []);
+      }
+      byDate.get(date)!.push(result);
+    });
+
+    // Calculate real performance for each date
+    const data: HistoricalPerformance[] = [];
+    byDate.forEach((results, date) => {
+      const wins = results.filter(r => r.outcome === 'won').length;
+      const totalROI = results.reduce((sum, r) => sum + r.profitLoss, 0);
+      const avgConfidence = results.reduce((sum, r) => sum + r.predictedProbability, 0) / results.length;
+
+      data.push({
+        date,
+        sport: sport || results[0].sport,
+        accuracy: (wins / results.length) * 100,
+        roi: (totalROI / results.length),
+        confidenceScore: avgConfidence,
+      });
+    });
+
+    return data.sort((a, b) => a.date.localeCompare(b.date));
   }
 
   // Get overall statistics

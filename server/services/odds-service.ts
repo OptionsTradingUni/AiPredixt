@@ -31,13 +31,13 @@ export class OddsService {
 
   async getOdds(sport: 'soccer' | 'basketball' | 'icehockey' | 'tennis'): Promise<OddsData[]> {
     if (!this.enabled) {
-      console.log('⚠️  Odds API not configured - using mock data');
-      return this.getMockOdds(sport);
+      console.log('⚠️  Odds API not configured - no data available');
+      return [];
     }
 
     if (this.requestCount >= this.monthlyLimit) {
-      console.log('⚠️  Monthly API limit reached - using mock data');
-      return this.getMockOdds(sport);
+      console.log('⚠️  Monthly API limit reached - no data available');
+      return [];
     }
 
     try {
@@ -60,7 +60,7 @@ export class OddsService {
       return this.parseOddsResponse(response.data, sport);
     } catch (error: any) {
       console.error('Error fetching odds:', error.message);
-      return this.getMockOdds(sport);
+      return [];
     }
   }
 
@@ -115,74 +115,6 @@ export class OddsService {
     });
   }
 
-  private getMockOdds(sport: string): OddsData[] {
-    const mockData: Record<string, OddsData[]> = {
-      soccer: [
-        {
-          gameId: 'mock-soccer-1',
-          sport: 'soccer',
-          league: 'Premier League',
-          homeTeam: 'Manchester City',
-          awayTeam: 'Liverpool',
-          gameTime: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-          odds: {
-            moneyline: { home: 1.75, away: 4.2, draw: 3.6 },
-            spread: { line: -1.5, odds: 2.15 },
-            totals: { line: 2.5, over: 1.85, under: 2.05 },
-          },
-          bookmaker: 'SportyBet',
-        },
-      ],
-      basketball: [
-        {
-          gameId: 'mock-basketball-1',
-          sport: 'basketball',
-          league: 'NBA',
-          homeTeam: 'Lakers',
-          awayTeam: 'Warriors',
-          gameTime: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
-          odds: {
-            moneyline: { home: 1.65, away: 2.3 },
-            spread: { line: -3.5, odds: 1.9 },
-            totals: { line: 225.5, over: 1.9, under: 1.9 },
-          },
-          bookmaker: 'SportyBet',
-        },
-      ],
-      icehockey: [
-        {
-          gameId: 'mock-hockey-1',
-          sport: 'icehockey',
-          league: 'NHL',
-          homeTeam: 'Maple Leafs',
-          awayTeam: 'Bruins',
-          gameTime: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(),
-          odds: {
-            moneyline: { home: 2.1, away: 1.75 },
-            spread: { line: -1.5, odds: 2.5 },
-            totals: { line: 6.5, over: 1.9, under: 1.9 },
-          },
-          bookmaker: 'SportyBet',
-        },
-      ],
-      tennis: [
-        {
-          gameId: 'mock-tennis-1',
-          sport: 'tennis',
-          league: 'ATP',
-          homeTeam: 'Djokovic',
-          awayTeam: 'Alcaraz',
-          gameTime: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
-          odds: {
-            moneyline: { home: 1.6, away: 2.4 },
-          },
-          bookmaker: 'SportyBet',
-        },
-      ],
-    };
-
-    return mockData[sport] || [];
-  }
 
   getRemainingRequests(): { used: number; limit: number; remaining: number } {
     return {

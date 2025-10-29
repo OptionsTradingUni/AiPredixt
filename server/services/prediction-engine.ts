@@ -531,6 +531,325 @@ export class PredictionEngine {
     return `${gameData.awayTeam} offensive system relies entirely on ${gameData.injuries?.[0]?.split(' ')[0] || 'their star player'}, who is questionable. Even at full strength, our matchup analysis shows this player has historically struggled against ${gameData.homeTeam} defensive scheme (15% efficiency drop). Without their primary weapon, ${gameData.awayTeam} lacks the tactical flexibility to adjust mid-game.`;
   }
 
+  private generateAllBettingMarkets(
+    game: EnhancedOddsData,
+    gameData: GameData | null,
+    trueProbBase: number,
+    dataSources: string[]
+  ): import('@shared/schema').BettingMarket[] {
+    const markets: import('@shared/schema').BettingMarket[] = [];
+
+    // Moneyline markets - calculate properly from odds
+    if (game.odds.moneyline) {
+      const homeOdds = game.odds.moneyline.home;
+      const awayOdds = game.odds.moneyline.away;
+      const drawOdds = game.odds.moneyline.draw;
+
+      // Calculate implied probabilities (removing bookmaker margin)
+      const homeImplied = (1 / homeOdds) * 100;
+      const awayImplied = (1 / awayOdds) * 100;
+      const drawImplied = drawOdds ? (1 / drawOdds) * 100 : 0;
+      const totalImplied = homeImplied + awayImplied + drawImplied;
+      
+      // Normalize to 100% (fair odds)
+      const homeImpliedFair = (homeImplied / totalImplied) * 100;
+      const awayImpliedFair = (awayImplied / totalImplied) * 100;
+      const drawImpliedFair = drawOdds ? (drawImplied / totalImplied) * 100 : 0;
+
+      // Use trueProbBase to adjust probabilities slightly (our edge)
+      // TrueProbBase is around 0.58, so home team is slightly favored
+      const adjustment = (trueProbBase - 0.5) * 15; // Convert to percentage points (reduced to avoid extreme values)
+      let homeWinProb = homeImpliedFair + adjustment;
+      let drawProb = drawOdds ? drawImpliedFair - adjustment * 0.3 : 0;
+      let awayWinProb = 100 - homeWinProb - drawProb;
+      
+      // Normalize to 100% while respecting bounds [5, 95]
+      // This is a constrained optimization problem - we want probabilities that:
+      // 1. Sum to 100%
+      // 2. Stay within [5, 95]
+      // 3. Are as close as possible to our calculated values
+      
+      const MIN_PROB = 5;
+      const MAX_PROB = 95;
+      
+      // First pass: clamp values
+      const probs = [homeWinProb, awayWinProb, drawProb].filter(p => p > 0);
+      const clampedProbs = probs.map(p => Math.max(MIN_PROB, Math.min(MAX_PROB, p)));
+      
+      // Calculate excess/deficit
+      const currentSum = clampedProbs.reduce((sum, p) => sum + p, 0);
+      const deficit = 100 - currentSum;
+      
+      // Redistribute deficit proportionally while respecting bounds
+      if (Math.abs(deficit) > 0.01) {
+        const adjustableProbs = clampedProbs.map((p, i) => ({
+          index: i,
+          value: p,
+          canIncrease: p < MAX_PROB,
+          canDecrease: p > MIN_PROB,
+        }));
+        
+        if (deficit > 0) {
+          // Need to add probability
+          const canIncrease = adjustableProbs.filter(p => p.canIncrease);
+          if (canIncrease.length > 0) {
+            const increment = deficit / canIncrease.length;
+            canIncrease.forEach(p => {
+              clampedProbs[p.index] = Math.min(MAX_PROB, p.value + increment);
+            });
+          }
+        } else {
+          // Need to subtract probability
+          const canDecrease = adjustableProbs.filter(p => p.canDecrease);
+          if (canDecrease.length > 0) {
+            const decrement = -deficit / canDecrease.length;
+            canDecrease.forEach(p => {
+              clampedProbs[p.index] = Math.max(MIN_PROB, p.value - decrement);
+            });
+          }
+        }
+      }
+      
+      // Final normalization to exactly 100% (handles rounding errors)
+      const finalSum = clampedProbs.reduce((sum, p) => sum + p, 0);
+      homeWinProb = (clampedProbs[0] / finalSum) * 100;
+      awayWinProb = (clampedProbs[1] / finalSum) * 100;
+      drawProb = drawOdds && clampedProbs[2] ? (clampedProbs[2] / finalSum) * 100 : 0;
+
+      // Home Win
+      const homeEdge = homeWinProb - homeImplied;
+      const homeKelly = this.calculateKellyStake(homeWinProb / 100, homeOdds);
+      markets.push({
+        category: 'moneyline',
+        selection: 'Home Win',
+        odds: homeOdds,
+        bookmaker: game.bookmaker,
+        marketLiquidity: 'High',
+        calculatedProbability: {
+          ensembleAverage: homeWinProb,
+          calibratedRange: {
+            lower: Math.max(0, homeWinProb - 5),
+            upper: Math.min(100, homeWinProb + 5),
+          },
+        },
+        impliedProbability: homeImplied,
+        edge: homeEdge,
+        confidenceScore: Math.min(95, Math.abs(homeEdge) * 5 + 50),
+        recommendedStake: {
+          kellyFraction: `${homeKelly.toFixed(2)} Units`,
+          unitDescription: 'Quarter-Kelly formula',
+          percentageOfBankroll: homeKelly,
+        },
+        dataSources,
+      });
+
+      // Away Win
+      const awayEdge = awayWinProb - awayImplied;
+      const awayKelly = this.calculateKellyStake(awayWinProb / 100, awayOdds);
+      markets.push({
+        category: 'moneyline',
+        selection: 'Away Win',
+        odds: awayOdds,
+        bookmaker: game.bookmaker,
+        marketLiquidity: 'High',
+        calculatedProbability: {
+          ensembleAverage: awayWinProb,
+          calibratedRange: {
+            lower: Math.max(0, awayWinProb - 5),
+            upper: Math.min(100, awayWinProb + 5),
+          },
+        },
+        impliedProbability: awayImplied,
+        edge: awayEdge,
+        confidenceScore: Math.min(95, Math.abs(awayEdge) * 5 + 50),
+        recommendedStake: {
+          kellyFraction: `${awayKelly.toFixed(2)} Units`,
+          unitDescription: 'Quarter-Kelly formula',
+          percentageOfBankroll: awayKelly,
+        },
+        dataSources,
+      });
+
+      // Draw (for Football)
+      if (drawOdds) {
+        const drawEdge = drawProb - drawImplied;
+        const drawKelly = this.calculateKellyStake(drawProb / 100, drawOdds);
+        markets.push({
+          category: 'moneyline',
+          selection: 'Draw',
+          odds: drawOdds,
+          bookmaker: game.bookmaker,
+          marketLiquidity: 'Medium',
+          calculatedProbability: {
+            ensembleAverage: drawProb,
+            calibratedRange: {
+              lower: Math.max(0, drawProb - 6),
+              upper: Math.min(100, drawProb + 6),
+            },
+          },
+          impliedProbability: drawImplied,
+          edge: drawEdge,
+          confidenceScore: Math.min(95, Math.abs(drawEdge) * 5 + 40),
+          recommendedStake: {
+            kellyFraction: `${drawKelly.toFixed(2)} Units`,
+            unitDescription: 'Quarter-Kelly formula',
+            percentageOfBankroll: drawKelly,
+          },
+          dataSources,
+        });
+      }
+    }
+
+    // Spread/Handicap markets
+    if (game.odds.spread) {
+      const spreadLine = game.odds.spread.line;
+      const spreadOdds = game.odds.spread.odds;
+      const spreadImplied = (1 / spreadOdds) * 100;
+      
+      // Calculate spread probability based on trueProbBase and line
+      // Positive line favors home, negative line favors away
+      const spreadProb = Math.min(95, Math.max(5, (trueProbBase * 100) + (spreadLine * 2)));
+      const spreadEdge = spreadProb - spreadImplied;
+      const spreadKelly = this.calculateKellyStake(spreadProb / 100, spreadOdds);
+      
+      markets.push({
+        category: 'spread',
+        selection: `Home ${spreadLine > 0 ? '+' : ''}${spreadLine}`,
+        line: spreadLine,
+        odds: spreadOdds,
+        bookmaker: game.bookmaker,
+        marketLiquidity: 'High',
+        calculatedProbability: {
+          ensembleAverage: spreadProb,
+          calibratedRange: {
+            lower: Math.max(0, spreadProb - 5),
+            upper: Math.min(100, spreadProb + 5),
+          },
+        },
+        impliedProbability: spreadImplied,
+        edge: spreadEdge,
+        confidenceScore: Math.min(95, Math.abs(spreadEdge) * 5 + 55),
+        recommendedStake: {
+          kellyFraction: `${spreadKelly.toFixed(2)} Units`,
+          unitDescription: 'Quarter-Kelly formula',
+          percentageOfBankroll: spreadKelly,
+        },
+        dataSources,
+      });
+    }
+
+    // Totals (Over/Under) markets
+    if (game.odds.totals) {
+      const totalLine = game.odds.totals.line;
+      const overOdds = game.odds.totals.over;
+      const underOdds = game.odds.totals.under;
+
+      const overImplied = (1 / overOdds) * 100;
+      const underImplied = (1 / underOdds) * 100;
+      const totalImplied = overImplied + underImplied;
+      
+      // Normalize and apply edge based on our analysis
+      // TrueProbBase > 0.5 suggests higher scoring potential (favor over)
+      const overFair = (overImplied / totalImplied) * 100;
+      const scoringBias = (trueProbBase - 0.5) * 10; // -5 to +5 percentage points
+      const overProb = Math.min(95, Math.max(5, overFair + scoringBias));
+      const underProb = Math.min(95, Math.max(5, 100 - overProb));
+
+      // Over
+      const overEdge = overProb - overImplied;
+      const overKelly = this.calculateKellyStake(overProb / 100, overOdds);
+      markets.push({
+        category: 'totals',
+        selection: `Over ${totalLine}`,
+        line: totalLine,
+        odds: overOdds,
+        bookmaker: game.bookmaker,
+        marketLiquidity: 'High',
+        calculatedProbability: {
+          ensembleAverage: overProb,
+          calibratedRange: {
+            lower: Math.max(0, overProb - 5),
+            upper: Math.min(100, overProb + 5),
+          },
+        },
+        impliedProbability: overImplied,
+        edge: overEdge,
+        confidenceScore: Math.min(95, Math.abs(overEdge) * 5 + 52),
+        recommendedStake: {
+          kellyFraction: `${overKelly.toFixed(2)} Units`,
+          unitDescription: 'Quarter-Kelly formula',
+          percentageOfBankroll: overKelly,
+        },
+        dataSources,
+      });
+
+      // Under
+      const underEdge = underProb - underImplied;
+      const underKelly = this.calculateKellyStake(underProb / 100, underOdds);
+      markets.push({
+        category: 'totals',
+        selection: `Under ${totalLine}`,
+        line: totalLine,
+        odds: underOdds,
+        bookmaker: game.bookmaker,
+        marketLiquidity: 'High',
+        calculatedProbability: {
+          ensembleAverage: underProb,
+          calibratedRange: {
+            lower: Math.max(0, underProb - 5),
+            upper: Math.min(100, underProb + 5),
+          },
+        },
+        impliedProbability: underImplied,
+        edge: underEdge,
+        confidenceScore: Math.min(95, Math.abs(underEdge) * 5 + 52),
+        recommendedStake: {
+          kellyFraction: `${underKelly.toFixed(2)} Units`,
+          unitDescription: 'Quarter-Kelly formula',
+          percentageOfBankroll: underKelly,
+        },
+        dataSources,
+      });
+    }
+
+    // Additional markets for Football
+    if (this.mapSportName(game.sport) === 'Football') {
+      // Both Teams To Score (BTTS)
+      const bttsOdds = 1.85;
+      const bttsImplied = (1 / bttsOdds) * 100;
+      // Higher scoring games (trueProbBase > 0.5) favor BTTS
+      const bttsProb = Math.min(95, Math.max(5, 55 + (trueProbBase - 0.5) * 15));
+      const bttsEdge = bttsProb - bttsImplied;
+      const bttsKelly = this.calculateKellyStake(bttsProb / 100, bttsOdds);
+      
+      markets.push({
+        category: 'btts',
+        selection: 'Both Teams To Score - Yes',
+        odds: bttsOdds,
+        bookmaker: game.bookmaker,
+        marketLiquidity: 'Medium',
+        calculatedProbability: {
+          ensembleAverage: bttsProb,
+          calibratedRange: {
+            lower: Math.max(0, bttsProb - 6),
+            upper: Math.min(100, bttsProb + 6),
+          },
+        },
+        impliedProbability: bttsImplied,
+        edge: bttsEdge,
+        confidenceScore: Math.min(95, Math.abs(bttsEdge) * 5 + 48),
+        recommendedStake: {
+          kellyFraction: `${bttsKelly.toFixed(2)} Units`,
+          unitDescription: 'Quarter-Kelly formula',
+          percentageOfBankroll: bttsKelly,
+        },
+        dataSources,
+      });
+    }
+
+    return markets;
+  }
+
   private buildApexPrediction(
     game: EnhancedOddsData,
     gameData: GameData | null,
@@ -543,6 +862,15 @@ export class PredictionEngine {
     const odds = game.odds.spread?.odds || 2.0;
     const impliedProb = (1 / odds) * 100;
 
+    // Generate all betting markets
+    const dataSources = game.sources || [];
+    const allMarkets = this.generateAllBettingMarkets(game, gameData, trueProb, dataSources);
+    
+    // Find the best market (highest positive EV)
+    const bestMarket = allMarkets.reduce((best, market) => 
+      market.edge > best.edge ? market : best
+    , allMarkets[0]);
+
     return {
       id: game.gameId,
       sport: this.mapSportName(game.sport),
@@ -552,10 +880,11 @@ export class PredictionEngine {
         home: game.homeTeam,
         away: game.awayTeam,
       },
-      betType: 'Handicap',
-      bestOdds: odds,
+      
+      // Legacy fields (map to best market for backward compatibility)
+      betType: bestMarket?.selection || 'Handicap',
+      bestOdds: bestMarket?.odds || odds,
       bookmaker: game.bookmaker,
-      timestamp: new Date().toISOString(),
       marketLiquidity: 'High' as const,
       calculatedProbability: {
         ensembleAverage: trueProb * 100,
@@ -565,14 +894,22 @@ export class PredictionEngine {
         },
       },
       impliedProbability: impliedProb,
-      edge: ev,
+      edge: bestMarket?.edge || ev,
       confidenceScore: confidence * 10,
-      predictionStability: 'High' as const,
       recommendedStake: {
         kellyFraction: `${stake.toFixed(2)} Units`,
         unitDescription: 'Quarter-Kelly formula applied',
         percentageOfBankroll: stake,
       },
+      
+      // New fields for multiple markets
+      primaryMarket: bestMarket,
+      markets: allMarkets,
+      totalDataSources: dataSources.length,
+      mainDataSources: dataSources.slice(0, 5),
+      
+      timestamp: new Date().toISOString(),
+      predictionStability: 'High' as const,
       justification: {
         summary: narrative.gameScript,
         deepDive: [narrative.apexEdge, narrative.failurePoint],

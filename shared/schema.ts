@@ -66,6 +66,25 @@ export interface ContingencyPick {
   triggerConditions: string[];
 }
 
+export interface BettingMarket {
+  category: 'moneyline' | 'spread' | 'totals' | 'btts' | 'correct_score' | 'half_full' | 'handicap' | 'other';
+  selection: string; // e.g., "Home Win", "Over 2.5", "Draw", "Away -1.5"
+  line?: number; // For spread/totals (e.g., 2.5, -1.5)
+  odds: number;
+  bookmaker: string;
+  marketLiquidity: 'High' | 'Medium' | 'Low';
+  calculatedProbability: Probability;
+  impliedProbability: number;
+  edge: number; // EV percentage
+  confidenceScore: number; // 1-100
+  recommendedStake: {
+    kellyFraction: string;
+    unitDescription: string;
+    percentageOfBankroll: number;
+  };
+  dataSources: string[]; // e.g., ["TheSportsDB", "FBref", "Sofascore"]
+}
+
 export interface ApexPrediction {
   id: string;
   sport: SportType;
@@ -75,24 +94,33 @@ export interface ApexPrediction {
     away: string;
   };
   league: string;
+  
+  // Legacy fields for backward compatibility
   betType: string;
   bestOdds: number;
   bookmaker: string;
-  timestamp: string;
   marketLiquidity: 'High' | 'Medium' | 'Low';
   calculatedProbability: Probability;
   impliedProbability: number;
   edge: number; // EV percentage
   confidenceScore: number; // 1-100
-  predictionStability: 'High' | 'Medium' | 'Low';
-  riskAssessment: RiskAssessment;
   recommendedStake: {
     kellyFraction: string;
     unitDescription: string;
     percentageOfBankroll: number;
   };
+  
+  timestamp: string;
+  predictionStability: 'High' | 'Medium' | 'Low';
+  riskAssessment: RiskAssessment;
   justification: Justification;
   contingencyPick: ContingencyPick;
+  
+  // New fields for multiple markets support
+  primaryMarket?: BettingMarket;
+  markets?: BettingMarket[];
+  totalDataSources?: number;
+  mainDataSources?: string[];
 }
 
 export interface HistoricalPerformance {

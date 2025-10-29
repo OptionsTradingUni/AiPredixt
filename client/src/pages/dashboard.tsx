@@ -10,8 +10,10 @@ import { MarketAnalysisTable } from '@/components/market-analysis-table';
 import { ContingencyPickCard } from '@/components/contingency-pick-card';
 import { HistoricalPerformanceChart } from '@/components/historical-performance-chart';
 import { ConfigStatusBanner } from '@/components/config-status-banner';
-import { RefreshCw, List } from 'lucide-react';
+import { AllMarketsPanel } from '@/components/all-markets-panel';
+import { RefreshCw, List, Calendar, Clock, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'wouter';
 
 interface DataSourceStatus {
@@ -26,16 +28,20 @@ interface DataSourceStatus {
 
 export default function Dashboard() {
   const [selectedSport, setSelectedSport] = useState<SportType | 'All'>('All');
+  const [selectedDate, setSelectedDate] = useState<'today' | 'tomorrow' | 'upcoming' | 'past'>('today');
 
   const { data: dataSourceStatus } = useQuery<DataSourceStatus>({
     queryKey: ['/api/data-source-status'],
   });
 
   const { data: apexPrediction, isLoading, refetch } = useQuery<ApexPrediction>({
-    queryKey: ['/api/apex-prediction', selectedSport],
+    queryKey: ['/api/apex-prediction', selectedSport, selectedDate],
     queryFn: async () => {
-      const sportParam = selectedSport !== 'All' ? `?sport=${selectedSport}` : '';
-      const response = await fetch(`/api/apex-prediction${sportParam}`);
+      const params = new URLSearchParams();
+      if (selectedSport !== 'All') params.set('sport', selectedSport);
+      params.set('date', selectedDate);
+      const queryString = params.toString();
+      const response = await fetch(`/api/apex-prediction${queryString ? `?${queryString}` : ''}`);
       if (!response.ok) throw new Error('Failed to fetch prediction');
       return response.json();
     },
@@ -85,11 +91,33 @@ export default function Dashboard() {
 
       {/* Sport Filters */}
       <div className="border-b border-border bg-card">
-        <div className="max-w-7xl mx-auto px-6 md:px-8 lg:px-12 py-6">
+        <div className="max-w-7xl mx-auto px-6 md:px-8 lg:px-12 py-6 space-y-6">
           <SportFilter
             selectedSport={selectedSport}
             onSelectSport={setSelectedSport}
           />
+          
+          {/* Date Filter */}
+          <Tabs value={selectedDate} onValueChange={(value) => setSelectedDate(value as typeof selectedDate)} data-testid="filter-date">
+            <TabsList className="grid w-full max-w-2xl grid-cols-4">
+              <TabsTrigger value="today" data-testid="button-date-today">
+                <Calendar className="mr-2 h-4 w-4" />
+                Today
+              </TabsTrigger>
+              <TabsTrigger value="tomorrow" data-testid="button-date-tomorrow">
+                <Clock className="mr-2 h-4 w-4" />
+                Tomorrow
+              </TabsTrigger>
+              <TabsTrigger value="upcoming" data-testid="button-date-upcoming">
+                <TrendingUp className="mr-2 h-4 w-4" />
+                Upcoming
+              </TabsTrigger>
+              <TabsTrigger value="past" data-testid="button-date-past">
+                <List className="mr-2 h-4 w-4" />
+                Past Results
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </div>
 
@@ -126,6 +154,11 @@ export default function Dashboard() {
               <div className="lg:col-span-8 space-y-8">
                 {/* Metrics Grid */}
                 <MetricsGrid prediction={apexPrediction} />
+
+                {/* All Betting Markets */}
+                {apexPrediction.markets && apexPrediction.markets.length > 0 && (
+                  <AllMarketsPanel markets={apexPrediction.markets} />
+                )}
 
                 {/* Risk Assessment */}
                 <RiskAssessmentPanel riskAssessment={apexPrediction.riskAssessment} />

@@ -1,0 +1,214 @@
+ Build Deploy HTTP
+  hint: undefined,
+  position: '174',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+❌ Failed to warm up Tennis cache: error: relation "predictions" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4312:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4252:20)
+    at async file:///app/dist/index.js:4748:13
+    at async Promise.allSettled (index 3)
+    at async CacheWarmupService.warmupCache (file:///app/dist/index.js:4744:7)
+    at async file:///app/dist/index.js:4728:7
+    at async Timeout._onTimeout (/app/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44) {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '174',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+🔄 Warming up games cache...
+❌ Failed to warm up Basketball cache: error: relation "predictions" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4312:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4252:20)
+    at async file:///app/dist/index.js:4748:13
+    at async Promise.allSettled (index 1)
+    at async CacheWarmupService.warmupCache (file:///app/dist/index.js:4744:7)
+    at async file:///app/dist/index.js:4728:7
+    at async Timeout._onTimeout (/app/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44) {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '174',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+❌ Failed to warm up games cache: error: relation "games" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedGames (file:///app/dist/index.js:4351:20)
+    at async DatabaseStorage.getGames (file:///app/dist/index.js:4301:25)
+    at async CacheWarmupService.warmupCache (file:///app/dist/index.js:4757:9)
+    at async file:///app/dist/index.js:4728:7
+    at async Timeout._onTimeout (/app/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44) {
+  length: 105,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '125',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+✅ Cache warmup completed successfully
+  line: '1449',
+  internalPosition: undefined,
+  routine: 'parserOpenTable'
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  dataType: undefined,
+  table: undefined,
+  constraint: undefined,
+  column: undefined,
+1:49:09 PM [express] GET /api/data-source-status 200 in 1ms :: {"isRealData":true,"apis":{"oddsApi":…
+  file: 'parse_relation.c',
+  detail: undefined,
+Error fetching apex prediction: error: relation "predictions" does not exist
+  hint: undefined,
+    at /app/node_modules/pg-pool/index.js:45:11
+  position: '174',
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4312:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4252:20)
+    at async file:///app/dist/index.js:4531:26 {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+}
+1:49:09 PM [express] GET /api/apex-prediction 500 in 47ms :: {"error":"Failed to fetch prediction"}
+  table: undefined,
+Error fetching all predictions: error: relation "predictions" does not exist
+  column: undefined,
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+  dataType: undefined,
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+  constraint: undefined,
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4312:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4252:20)
+  file: 'parse_relation.c',
+    at async DatabaseStorage.getAllPredictions (file:///app/dist/index.js:4273:22)
+    at async file:///app/dist/index.js:4546:28 {
+  line: '1449',
+  length: 111,
+  routine: 'parserOpenTable'
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '174',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+}
+1:49:12 PM [express] GET /api/all-predictions 500 in 49ms :: {"error":"Failed to fetch all predictio…
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4312:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4252:20)
+    at async DatabaseStorage.getAllPredictions (file:///app/dist/index.js:4273:22)
+    at async file:///app/dist/index.js:4546:28 {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '174',
+  internalPosition: undefined,
+  internalQuery: undefined,
+Error fetching all predictions: error: relation "predictions" does not exist
+  where: undefined,
+    at /app/node_modules/pg-pool/index.js:45:11
+  schema: undefined,
+  table: undefined,
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+  column: undefined,
+  dataType: undefined,
+}
+1:49:19 PM [express] GET /api/all-predictions 500 in 39ms :: {"error":"Failed to fetch all predictio…
+Error fetching all predictions: error: relation "predictions" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4312:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4252:20)
+    at async DatabaseStorage.getAllPredictions (file:///app/dist/index.js:4273:22)
+    at async file:///app/dist/index.js:4546:28 {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '174',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+1:49:21 PM [express] GET /api/all-predictions 500 in 58ms :: {"error":"Failed to fetch all predictio…
+}
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,

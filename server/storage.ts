@@ -505,12 +505,17 @@ export class DatabaseStorage implements IStorage {
 
   private async getCachedPrediction(sport: SportType, dateFilter?: string): Promise<ApexPrediction | null> {
     const now = new Date();
+    
+    // Create a unique cache key based on sport and dateFilter
+    const cacheKey = `${sport}-${dateFilter || 'all'}`;
+    
     const [cached] = await db
       .select()
       .from(predictions)
       .where(
         and(
           eq(predictions.sport, sport),
+          eq(predictions.id, cacheKey),
           gte(predictions.expiresAt, now)
         )
       )
@@ -522,13 +527,16 @@ export class DatabaseStorage implements IStorage {
     return null;
   }
 
-  private async cachePrediction(prediction: ApexPrediction, expiryMinutes: number): Promise<void> {
+  private async cachePrediction(prediction: ApexPrediction, expiryMinutes: number, dateFilter?: string): Promise<void> {
     const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
+    
+    // Create a unique cache key based on sport and dateFilter
+    const cacheKey = `${prediction.sport}-${dateFilter || 'all'}`;
     
     await db
       .insert(predictions)
       .values({
-        id: prediction.id,
+        id: cacheKey,
         sport: prediction.sport,
         match: prediction.match,
         homeTeam: prediction.teams.home,

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import https from 'https';
 import * as cheerio from 'cheerio';
 
 /**
@@ -174,8 +175,14 @@ export class FreeSourcesScraper {
       const leagueSlug = leagueMap[league] || 'english-premier-league';
       const url = `https://www.physioroom.com/news/${leagueSlug}-injury-table.php`;
 
+      const httpsAgent = new https.Agent({
+        rejectUnauthorized: true,
+        minVersion: 'TLSv1.2',
+      });
+
       const response = await axios.get(url, {
         headers: { 'User-Agent': this.USER_AGENT },
+        httpsAgent,
         timeout: 15000,
       });
 

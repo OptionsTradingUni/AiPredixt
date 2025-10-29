@@ -1,4 +1,5 @@
 import axios from 'axios';
+import https from 'https';
 import { API_CONFIG } from './api-config';
 import * as cheerio from 'cheerio';
 
@@ -168,11 +169,17 @@ export class EnhancedOddsService {
     const url = `https://www.oddsportal.com/${sportPath}/`;
 
     try {
+      const httpsAgent = new https.Agent({
+        rejectUnauthorized: true,
+        minVersion: 'TLSv1.2',
+      });
+
       const response = await axios.get(url, {
         headers: { 
           'User-Agent': this.USER_AGENT,
           'Accept-Language': 'en-US,en;q=0.9',
         },
+        httpsAgent,
         timeout: 15000,
       });
 
@@ -211,11 +218,17 @@ export class EnhancedOddsService {
     const url = `https://www.betexplorer.com/${sportPath}/`;
 
     try {
+      const httpsAgent = new https.Agent({
+        rejectUnauthorized: true,
+        minVersion: 'TLSv1.2',
+      });
+
       const response = await axios.get(url, {
         headers: { 
           'User-Agent': this.USER_AGENT,
           'Accept-Language': 'en-US,en;q=0.9',
         },
+        httpsAgent,
         timeout: 15000,
       });
 

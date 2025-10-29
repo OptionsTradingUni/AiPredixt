@@ -15,18 +15,27 @@ export default function MatchDetailPage() {
   const [, navigate] = useLocation();
   const gameId = params.id;
 
-  const { data: match, isLoading } = useQuery<MatchDetail>({
+  const { data: match, isLoading, error, refetch } = useQuery<MatchDetail>({
     queryKey: ['/api/games', gameId],
     queryFn: async () => {
       const response = await fetch(`/api/games/${gameId}`);
-      if (!response.ok) throw new Error('Failed to fetch match details');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        const error = new Error(errorData.error || 'Failed to fetch match details');
+        (error as any).status = response.status;
+        throw error;
+      }
       return response.json();
     },
     enabled: !!gameId,
+    retry: (failureCount, error: any) => {
+      if (error?.status === 404) return false;
+      return failureCount < 2;
+    },
   });
 
   // Fetch H2H data
-  const { data: h2hData } = useQuery({
+  const { data: h2hData, isLoading: h2hLoading, error: h2hError } = useQuery({
     queryKey: ['/api/h2h', match?.teams.home, match?.teams.away, match?.sport],
     queryFn: async () => {
       if (!match) return null;
@@ -40,10 +49,11 @@ export default function MatchDetailPage() {
       return response.json();
     },
     enabled: !!match,
+    retry: 1,
   });
 
   // Fetch standings
-  const { data: standingsData } = useQuery({
+  const { data: standingsData, isLoading: standingsLoading, error: standingsError } = useQuery({
     queryKey: ['/api/standings', match?.league],
     queryFn: async () => {
       if (!match) return null;
@@ -56,10 +66,11 @@ export default function MatchDetailPage() {
       return response.json();
     },
     enabled: !!match,
+    retry: 1,
   });
 
   // Fetch team form
-  const { data: homeForm } = useQuery({
+  const { data: homeForm, isLoading: homeFormLoading, error: homeFormError } = useQuery({
     queryKey: ['/api/team-form', match?.teams.home],
     queryFn: async () => {
       if (!match) return null;
@@ -72,9 +83,10 @@ export default function MatchDetailPage() {
       return response.json();
     },
     enabled: !!match,
+    retry: 1,
   });
 
-  const { data: awayForm } = useQuery({
+  const { data: awayForm, isLoading: awayFormLoading, error: awayFormError } = useQuery({
     queryKey: ['/api/team-form', match?.teams.away],
     queryFn: async () => {
       if (!match) return null;
@@ -87,6 +99,7 @@ export default function MatchDetailPage() {
       return response.json();
     },
     enabled: !!match,
+    retry: 1,
   });
 
   if (isLoading) {
@@ -100,19 +113,62 @@ export default function MatchDetailPage() {
     );
   }
 
-  if (!match) {
+  if (error || (!isLoading && !match)) {
+    const errorStatus = (error as any)?.status;
+    const isNotFound = errorStatus === 404;
+    const isServerError = errorStatus === 500;
+    
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Match Not Found</h2>
-          <p className="text-muted-foreground mb-4">The match you're looking for doesn't exist.</p>
-          <Button onClick={() => navigate('/')} data-testid="button-back">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Button>
-        </div>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <AlertCircle className="h-16 w-16 text-muted-foreground" />
+              </div>
+              
+              <div>
+                <h2 className="text-2xl font-bold mb-2" data-testid="text-error-title">
+                  {isNotFound ? 'Match Not Found' : isServerError ? 'Server Error' : 'Unable to Load Match'}
+                </h2>
+                <p className="text-muted-foreground mb-4" data-testid="text-error-message">
+                  {isNotFound ? (
+                    <>The match you're looking for doesn't exist or may have been removed.</>
+                  ) : isServerError ? (
+                    <>Our server encountered an error while fetching match data. Some data sources may be temporarily unavailable. Please try again in a moment.</>
+                  ) : (
+                    <>We're having trouble loading this match. This could be due to network issues or temporary unavailability of data sources.</>
+                  )}
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                {!isNotFound && (
+                  <Button onClick={() => refetch()} variant="default" data-testid="button-retry">
+                    Try Again
+                  </Button>
+                )}
+                <Button onClick={() => navigate('/')} variant={isNotFound ? "default" : "outline"} data-testid="button-back">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </div>
+
+              {!isNotFound && (
+                <div className="text-xs text-muted-foreground mt-4 p-3 bg-muted/50 dark:bg-muted/30 rounded">
+                  <p className="font-semibold mb-1">Why am I seeing this?</p>
+                  <p>We gather data from multiple sources. If all sources are temporarily unavailable or rate-limited, matches may not load. This usually resolves within a few minutes.</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
+  }
+
+  if (!match) {
+    return null;
   }
 
   const getStatusBadge = () => {
@@ -712,7 +768,22 @@ export default function MatchDetailPage() {
 
           {/* HEAD TO HEAD TAB */}
           <TabsContent value="h2h" className="space-y-6">
-            {h2hData ? (
+            {h2hLoading ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading head-to-head data...</p>
+                </CardContent>
+              </Card>
+            ) : h2hError || !h2hData ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">Head-to-head data temporarily unavailable</p>
+                  <p className="text-sm text-muted-foreground mt-2">Data sources may be rate-limited. Try again later.</p>
+                </CardContent>
+              </Card>
+            ) : (
               <Card>
                 <CardHeader>
                   <CardTitle>Head to Head History</CardTitle>
@@ -774,19 +845,27 @@ export default function MatchDetailPage() {
                   )}
                 </CardContent>
               </Card>
-            ) : (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Loading head-to-head data...</p>
-                </CardContent>
-              </Card>
             )}
           </TabsContent>
 
           {/* STANDINGS TAB */}
           <TabsContent value="standings" className="space-y-6">
-            {standingsData ? (
+            {standingsLoading ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading league standings...</p>
+                </CardContent>
+              </Card>
+            ) : standingsError || !standingsData ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">League standings temporarily unavailable</p>
+                  <p className="text-sm text-muted-foreground mt-2">Data sources may be rate-limited. Try again later.</p>
+                </CardContent>
+              </Card>
+            ) : (
               <>
                 <Card>
                   <CardHeader>
@@ -853,7 +932,21 @@ export default function MatchDetailPage() {
 
                 {/* Team Form */}
                 <div className="grid md:grid-cols-2 gap-6">
-                  {homeForm && homeForm.form && (
+                  {homeFormLoading ? (
+                    <Card>
+                      <CardContent className="py-12 text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-sm text-muted-foreground">Loading form data...</p>
+                      </CardContent>
+                    </Card>
+                  ) : homeFormError || !homeForm?.form ? (
+                    <Card>
+                      <CardContent className="py-12 text-center">
+                        <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground mb-4" />
+                        <p className="text-sm text-muted-foreground">Team form data unavailable</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg">{match.teams.home} - Recent Form</CardTitle>
@@ -881,7 +974,21 @@ export default function MatchDetailPage() {
                     </Card>
                   )}
 
-                  {awayForm && awayForm.form && (
+                  {awayFormLoading ? (
+                    <Card>
+                      <CardContent className="py-12 text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-sm text-muted-foreground">Loading form data...</p>
+                      </CardContent>
+                    </Card>
+                  ) : awayFormError || !awayForm?.form ? (
+                    <Card>
+                      <CardContent className="py-12 text-center">
+                        <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground mb-4" />
+                        <p className="text-sm text-muted-foreground">Team form data unavailable</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-lg">{match.teams.away} - Recent Form</CardTitle>
@@ -910,13 +1017,6 @@ export default function MatchDetailPage() {
                   )}
                 </div>
               </>
-            ) : (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Loading league standings...</p>
-                </CardContent>
-              </Card>
             )}
           </TabsContent>
 

@@ -168,16 +168,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/games/:id", async (req, res) => {
     try {
       const gameId = req.params.id;
+      console.log(`🎯 API request for match detail: ${gameId}`);
+      
       const matchDetail = await storage.getMatchDetail(gameId);
       
       if (!matchDetail) {
-        return res.status(404).json({ error: 'Match not found' });
+        console.log(`❌ Match not found: ${gameId}`);
+        return res.status(404).json({ 
+          error: 'Match not found',
+          message: 'The requested match could not be found. It may have been removed or the ID is incorrect.',
+          gameId 
+        });
       }
       
+      console.log(`✅ Match detail returned: ${matchDetail.teams.home} vs ${matchDetail.teams.away}`);
       res.json(matchDetail);
     } catch (error) {
-      console.error('Error fetching match detail:', error);
-      res.status(500).json({ error: 'Failed to fetch match detail' });
+      console.error('❌ Error fetching match detail:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch match detail',
+        message: 'An error occurred while fetching match data. Some data sources may be temporarily unavailable. Please try again in a few moments.'
+      });
     }
   });
 

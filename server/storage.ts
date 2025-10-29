@@ -420,28 +420,38 @@ export class MemStorage implements IStorage {
       console.log(`✅ Found game: ${game.teams.home} vs ${game.teams.away}`);
       
       // Try to get full prediction for this game if not already found
+      // IMPORTANT: Only check cached predictions, don't generate new ones (too slow)
       if (!prediction) {
         try {
-          const allPredictions = await this.getAllPredictions(game.sport);
-          prediction = allPredictions.find(p => 
-            (p.id === game.id) ||
-            (p.teams.home === game.teams.home && p.teams.away === game.teams.away)
-          );
+          const cacheKey = `${game.sport}-all`;
+          const cached = this.allGamesCache.get(cacheKey as any);
           
-          if (prediction) {
-            console.log(`✅ Found prediction for game`);
+          if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
+            // Use cached predictions if available
+            prediction = cached.predictions.find(p => 
+              (p.id === game.id) ||
+              (p.teams.home === game.teams.home && p.teams.away === game.teams.away)
+            );
+            
+            if (prediction) {
+              console.log(`✅ Found cached prediction for game`);
+            } else {
+              console.log(`⚠️ No cached prediction found for this specific game`);
+            }
+          } else {
+            console.log(`⚠️ No prediction cache available - skipping to show match quickly`);
           }
         } catch (predError) {
-          console.error('Failed to fetch prediction:', predError);
+          console.error('Failed to fetch cached prediction:', predError);
         }
       }
       
-      // Return game with enriched data structure and prediction
+      // Return game with enriched data structure and prediction (if available)
       return {
         ...game,
         venue: game.league || 'TBD',
         referee: 'TBD',
-        prediction, // Include full prediction data
+        prediction, // Include full prediction data if cached, otherwise undefined
       };
     } catch (error) {
       console.error('❌ Error in getMatchDetail:', error);

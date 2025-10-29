@@ -1,0 +1,19 @@
+1. I will be deploying in railway 
+2. Set the env , let it be a real data 
+3. I want you to make it more accurate 
+Tell me to proceed or not 
+I want it to be super smart 
+Get all informations 
+Like all informations 
+Like super super smart 
+It's not possible to have high wins but anything can be possible and I want to do that and I want you to accompany me on my journey 
+Detailed search and strategies all over 
+Huge searches 
+Uses all plan and let it be simple to those visiting the site so they quickly understand and know what to do 
+I'll send it again 
+Emphasis on Holistic Synthesis & Emergent Patterns: Instruct the AI not just to collect data points but to actively look for emergent patterns and non-obvious connections between different data categories (e.g., how a specific weather pattern impacts a particular player's efficiency only when facing a certain defensive style).
+2. Deep Matchup Simulation: Mandate more detailed simulation of specific player vs. player matchups within the game (e.g., star receiver vs. top cornerback, pitcher vs. key batters) using granular historical data.
+3. Explicit "Why This Opponent Fails" Analysis: Require the justification to include a specific section detailing why the opponent is predicted to lose based on their specific weaknesses exploited by the favored side's strengths or the specific game situation.
+4. Dynamic Narrative Integration: The AI should construct a coherent "narrative" or likely game script based on its analysis (e.g., "Team A likely to dominate possession early due to midfield matchup, forcing Team B into counter-attacks where their star striker has a low conversion rate against Team A's defensive setup"). The prediction should align with this data-driven narrative.
+5. Second-Order Impact Analysis: Instruct the AI to consider second-order impacts – e.g., if Player A is out, how does that change the role and likely performance of Player B and Player C?
+6. "Unquantifiable" Factor Estimation (Proxy): Explicitly task 

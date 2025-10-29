@@ -1,0 +1,70 @@
+Football (American) - (NFL, NCAA)
+Nature of the Game: A "weak link" strategy game. One failed link (a bad Offensive Lineman, a terrible cornerback) can be relentlessly exploited to cause a total team collapse. It is a game of structured, violent plays, and "efficiency" is the #1 king.
+What "Fairs Most" (The Most Predictive Factors):
+1. Trench Warfare (O-Line vs. D-Line): This is the single most important, and most overlooked, factor.
+• Why: If your O-Line can't block, nothing else matters. Your run game fails, and your QB has no time to throw. It's the engine of the entire team.
+• What to Look For: Cluster Injuries here are a 10/10 "Red Flag." A team missing 2+ starting O-linemen (especially the Left Tackle) is in massive trouble.
+2. Efficiency Metrics (Not "Total Yards"):
+• Why: "Total Yards" is a trap. A team can get 500 yards and 10 points (bad).
+• What to Look For: Yards Per Play (YPP) Differential. (Offensive YPP minus Defensive YPP). This is the true measure of a team's efficiency and dominance. Also, Red Zone Touchdown % (do they get 7 points or 3?).
+3. The "Trap Game" (Schedule Spot):
+• Why: Football is so violent and emotional that it's impossible to be 100% "up" for 17 weeks.
+• What to Look For:
+• The "Look-Ahead": A so-so team playing right before their massive rival. (e.g., A team plays the Jaguars before they play the Chiefs). They are not focused.
+• The "Let-Down": A team that just won a huge, emotional game (a primetime rivalry, a big upset). They are emotionally and physically drained.
+What to Watch Out For (Ghost Factors & Red Flags):
+• Weather (Specifically Wind): Rain doesn't matter. Cold doesn't matter. Wind changes everything. High, gusting winds (20+ mph) kill the deep passing game and make field goals a lottery. This massively benefits the better running team and the better defense.
+• Coaching Scheme Mismatch: Is a "Cover-3 Zone" team playing a QB who shreds zone coverage? Is a "pass-happy" team playing a "bend-don't-break" defense that wants you to pass? This is advanced scouting.
+• O-Line "Cohesion": Are they starting two new Guards who have never played next to each other? This will lead to missed assignments, sacks, and fumbles.
+• The "Short Week" (Thursday Night Football): The road team on a short week is at a massive disadvantage. They lose a day of practice, a day of healing, and have to travel. Bet against them.
+2. Basketball - (NBA, NCAA)
+Nature of the Game: A "strong link" star-driven game. One superstar (LeBron, Jokic) can dictate the entire game. It is a game of "flow" and "runs," and physical fatigue is the dominant variable.
+What "Fairs Most" (The Most Predictive Factors):
+1. Schedule Fatigue (The #1 NBA Factor):
+• Why: The 82-game NBA season is a logistical nightmare. Teams are constantly tired.
+• What to Look For:
+• Back-to-Back (B2B): The second game of a back-to-back.
+• The "Killer": 3rd game in 4 nights (3-in-4). The team is running on fumes.
+• The "Vegas Flu" / "Miami Flu": A young team on the road in a "party city" (Miami, Vegas, LA). They will be unfocused.
+2. Pace-Adjusted Stats:
+• Why: A team scoring 120 points on 110 possessions is worse than a team scoring 115 on 100 possessions.
+• What to Look For: Points Per 100 Possessions (Offensive/Defensive Rating). This is the only stat that matters for team strength.
+3. The "Four Factors":
+• Why: These are the four pillars of winning.
+• What to Look For: Shooting % (eFG%), Turnover %, Offensive Rebound %, and Free Throw Rate (FT/FGA). A team that wins these four categories almost always wins the game.
+What to Watch Out For (Ghost Factors & Red Flags):
+• Player-Referee Feud: This is a real, documented "ghost" factor. Does a star (e.S., Luka Dončić) have a known hostile relationship with a specific referee (e.g., Scott Foster)? That ref is more likely to give him a quick, game-changing technical foul.
+• Player-Tracking Data (Publicly Available): Look up a player's "Average Speed" and "Total Distance Covered" on NBA.com/stats. If these numbers are trending down, the player is fatigued or hiding an injury, even if his scoring is the same.
+• "Hero Ball" vs. "Assist Rate": Is a team's assist rate trending down? This is a sign of internal friction, "selfish" play, and a lack of trust in the system ("I gotta get mine").
+3. Hockey - (NHL)
+Nature of the Game: The most high-variance (random) of the major sports. It's a game of "flow," "puck luck," and is dominated by a single position: the Goaltender.
+What "Fairs Most" (The Most Predictive Factors):
+1. Goaltending (The "Great Equalizer"):
+• Why: A "hot" goalie can steal a game his team has no business winning. A "cold" goalie will lose a game his team dominated.
+• What to Look For: Goals Saved Above Expected (GSAx). This metric tells you if a goalie is truly playing well or just facing easy shots.
+2. Special Teams:
+• Why: Many games are decided by a Power Play (PP) goal or a Penalty Kill (PK) stop.
+• What to Look For: The combined (PP% + PK%) is a great "quick" metric. Anything over 105% is elite.
+3. Possession (5-on-5):
+• Why: This is the "true" measure of a team, as it removes the variance of special teams.
+• What to Look For: Corsi % or Fenwick % (Shot attempt differentials). The team that controls the puck (over 52-53%) will win more often in the long run.
+What to Watch Out For (Ghost Factors & Red Flags):
+• The "Cold" Backup Goalie: This is a huge "Red Flag." The starting goalie is resting, and the backup hasn't played in 2-3 weeks. He will be cold, his timing will be off, and he's likely to give up an "easy" goal in the first 10 minutes.
+• Long-Haul Travel (East-West): This is more impactful in hockey than in other sports. A team flying from the East Coast (e.g., Boston) to the West Coast (e.g., Los Angeles) is suffering a 3-hour body-clock shift. The "first game of a long road trip" is a classic schedule loss.
+• The "Empty" Last Game: The last game of a 5+ game road trip. Win or lose, the team is mentally "on the plane home." They have no energy, no focus, and just want it to be over.
+4. Table Tennis - (ITTF World Tour)
+Nature of the Game: The most psychological sport on this list. It is 1-on-1, high-speed "physical chess." Reaction time, fine motor skills, and mental strength are everything.
+What "Fairs Most" (The Most predictive Factors):
+1. Head-to-Head (H2H) Style Mismatch:
+• Why: This is more important than rank. Style beats rank.
+• What to Look For: Does a "Chopper" (defensive) player always beat a specific "Looper" (offensive) player? The defensive style might perfectly neutralize the offensive player's best weapon, leading to frustration and errors.
+2. Recent Form (Micro-Level):
+• Why: Confidence and "feel" are critical.
+• What to Look For: How did they play yesterday? In this tournament? A lower-ranked player who just had a massive upset win is "hot" and dangerous.
+3. The "Mental Block":
+• Why: The psychology of 1-on-1 sports is brutal.
+• What to Look For: Does Player A always lose to Player B in the finals? Does Player A always crumble after losing the first set? This is a documented pattern of mental weakness.
+What to Watch Out For (Ghost Factors & Red Flags):
+• Travel & Acclimatization: This is the #1 "ghost" factor. Did the player fly from China to Germany yesterday? Their sleep is gone, their reaction time is off, and their fine motor skills are shot. This is a massive disadvantage that models miss.
+• Equipment Tinkering: Did you read on a forum that a player is "testing a new rubber" on their paddle? This is a huge deal. The smallest change can lead to dozens of unforced errors as they adjust.
+• Venue / Ball / Lighting: This is deep-level info. Are they using a "DHS" ball (common in China) or a "Nittaku" ball (common in Japan)? Players have strong preferences. Is the lighting or flooring different? This can mess with ball-tracking and timing.

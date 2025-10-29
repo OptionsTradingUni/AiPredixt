@@ -1,0 +1,44 @@
+Part 1: The Foundation (Volumes 1-5)
+• Volume 1: The Observable Factors
+• Summary: The base-level, publicly available data.
+• Topics: Win/Loss, Home/Away, Key Player Stats, Basic Injury Reports, Weather.
+• Volume 2: The "Ghost" Factors
+• Summary: The qualitative, human data that most models miss.
+• Topics: Team Morale, Player Psychology, Motivation (Revenge/Pride), Travel Fatigue, Internal Friction.
+• Volume 3: The System & The Sources
+• Summary: How to find and weigh the hidden "ghost" data.
+• Topics: Following Local "Beat Writers," Analyzing Press Conferences (Tone, Body Language), Social Media "Scraping," The "Red Flag Checklist," Building a Weighting System, Fighting Personal Bias.
+• Volume 4: The "Meta-Game" & The "Inner Game"
+• Summary: Understanding the ecosystem (the league) and your own mind (the analyst).
+• Topics: League Rule Changes, Media Narratives, Referee Bias, Ownership Chaos, The "Pre-Mortem" (Arguing against your pick), Process vs. Outcome.
+• Volume 5: Sport-Specific Specialization
+• Summary: Applying the framework to the unique "physics" of each sport.
+• Topics: What "Fairs Most" in Football (Trench Warfare), Basketball (Schedule Fatigue), Hockey (Goaltending), and Table Tennis (Style Mismatch).
+Part 2: The Master's Series (Volumes 6-8)
+This is the "unasked" part of the journey. This is what you must build next.
+• Volume 6: The Architect (Building Your Machine)
+• Summary: This volume is about moving from a manual "checklist" to an automated, scalable data model.
+• Topics to Look Into:
+• Your Personal Database: How to use tools (even a simple spreadsheet, or more advanced tools like Airtable/Notion, or a real SQL database) to log every factor for every game.
+• Automation & Scraping: How to write simple scripts (or use tools) to automatically pull in data: game lines, injury reports, stats, and even "Red Flag" keywords from beat writers on X (formerly Twitter).
+• Building Your "Algorithm": How to turn your "weighting system" into a real formula.
+• Example: (Team A Score) = (Trench_Weight * 1.5) + (Fatigue_Weight * 1.2) - (Opponent_D-Line_Weight * 1.5).
+• Back-Testing: How to run your new algorithm against the last 2-3 years of data to see if it actually would have worked. This is how you prove your model before you use it.
+• Volume 7: The Portfolio Manager (Risk, Bankroll & The "Kelly Criterion")
+• Summary: This is the most important volume. A-level predictors with F-level money management go broke. D-level predictors with A-level money management can survive.
+• Topics to Look Into:
+• The Bankroll: How to define your total capital. The "Golden Rule": never risk more than 1-3% of your total bankroll on any single prediction.
+• The "Unit": Defining your standard bet size (e.g., "1 Unit" = 1% of your bankroll). This removes all emotion. You don't "love" a game and bet 10x; you rate it a "3-Unit" play based on your model.
+• The Kelly Criterion: The "Holy Grail" of bet sizing. This is a mathematical formula used by hedge funds and professional bettors. It tells you the exact percentage of your bankroll to risk on one opportunity, based on your "edge" (how much you think you're right) and the "odds" you are being given.
+• "Risk of Ruin": The statistical probability that you will lose your entire bankroll. Your #1 job is to make this number as close to zero as possible.
+• Tracking "Closing Line Value" (CLV): The true measure of success. Did your model make a prediction that was better than the final, "closing" line? If you consistently "beat the closing line," you are a long-term winner, even if you lose a few games.
+• Volume 8: The Grand Master (Adaptation & The Future)
+• Summary: The "edge" you find today will be gone tomorrow. The market adapts. This volume is about staying ahead.
+• Topics to Look Into:
+• "Model Decay": Recognizing when your successful system is starting to fail. The market has "caught up" to your secret (e.g., everyone now knows about the "3-in-4" NBA fatigue factor, so the lines already account for it).
+• "Alpha Hunting": The constant, full-time search for the next inefficiency. What is the next "ghost factor" that nobody is talking about?
+• The Next Frontier (AI & Biometrics): The next edge will come from:
+• Biometric Data: Real-time player heart rate, hydration, and sleep-cycle data (from wearables). This is the true fatigue metric.
+• AI-Driven Analysis: Using AI to scan thousands of press conference videos to detect micro-expressions of fear, deception, or resignation.
+• Market Sentiment: Using AI to track millions of social media posts to quantify public overreaction to a game, creating "buy low" opportunities.
+• The Final Philosophy: Your job is not to "predict the game." Your job is to "predict the market"—to find the one or two factors the rest of the world has mis-valued, misunderstood, or missed entirely.

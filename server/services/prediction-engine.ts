@@ -1,5 +1,6 @@
 import { OddsData, oddsService } from './odds-service';
 import { GameData, sportsDataService } from './sports-data-service';
+import { webScraperService } from './web-scraper';
 import { ApexPrediction, SportType } from '@shared/schema';
 
 export class PredictionEngine {
@@ -30,6 +31,7 @@ export class PredictionEngine {
   async deepDive(game: OddsData): Promise<{
     gameData: GameData;
     analysis: any;
+    scrapedIntel: any;
     trueProb: number;
   }> {
     console.log(`🔬 PHASE 2: Deep diving ${game.homeTeam} vs ${game.awayTeam}...`);
@@ -41,21 +43,36 @@ export class PredictionEngine {
       throw new Error('Could not fetch game data');
     }
 
-    // Multi-vector analysis
+    // SCRAPE EVERYTHING from the internet for this match
+    console.log(`🕷️  Initiating comprehensive web scraping...`);
+    const scrapedIntel = await webScraperService.scrapeMatchIntelligence(
+      game.homeTeam,
+      game.awayTeam,
+      game.sport,
+      game.league,
+      gameData.venue
+    );
+
+    // Multi-vector analysis using BOTH API data AND scraped intelligence
     const analysis = {
-      tactical: this.analyzeTacticalMatchup(gameData),
-      form: this.analyzeForm(gameData),
-      situational: this.analyzeSituational(gameData),
-      psychological: this.analyzePsychological(gameData),
-      environmental: this.analyzeEnvironmental(gameData),
+      tactical: this.analyzeTacticalMatchup(gameData, scrapedIntel),
+      form: this.analyzeForm(gameData, scrapedIntel),
+      situational: this.analyzeSituational(gameData, scrapedIntel),
+      psychological: this.analyzePsychological(gameData, scrapedIntel),
+      environmental: this.analyzeEnvironmental(gameData, scrapedIntel),
+      social: this.analyzeSocialSentiment(scrapedIntel),
+      referee: this.analyzeRefereeImpact(scrapedIntel),
+      betting: this.analyzeBettingMarkets(scrapedIntel),
+      venue: this.analyzeVenueFactors(scrapedIntel),
+      fatigue: this.analyzeFatigueFactors(scrapedIntel),
     };
 
-    // Calculate true probability using all factors
+    // Calculate true probability using ALL factors including scraped data
     const trueProb = this.calculateTrueProbability(analysis, game);
 
-    console.log(`✅ True probability calculated: ${(trueProb * 100).toFixed(1)}%`);
+    console.log(`✅ True probability calculated with scraped intelligence: ${(trueProb * 100).toFixed(1)}%`);
 
-    return { gameData, analysis, trueProb };
+    return { gameData, analysis, scrapedIntel, trueProb };
   }
 
   // PHASE 3: Causal Narrative & Synthesis
@@ -87,11 +104,11 @@ export class PredictionEngine {
     // Deep dive on top 3-5 candidates
     const candidates = await Promise.all(
       shortlist.slice(0, 3).map(async (game) => {
-        const { gameData, analysis, trueProb } = await this.deepDive(game);
+        const { gameData, analysis, scrapedIntel, trueProb } = await this.deepDive(game);
         const ev = this.calculateEV(trueProb, game.odds.spread?.odds || 2.0);
         const confidence = this.calculateConfidence(analysis);
         
-        return { game, gameData, analysis, trueProb, ev, confidence };
+        return { game, gameData, analysis, scrapedIntel, trueProb, ev, confidence };
       })
     );
 
@@ -131,70 +148,199 @@ export class PredictionEngine {
     return (estimatedProb * odds - 1) * 100;
   }
 
-  private analyzeTacticalMatchup(gameData: GameData): any {
+  private analyzeTacticalMatchup(gameData: GameData, scraped: any): any {
+    const tacticalIntel = scraped.tacticalAnalysis?.data;
+    
     return {
       weight: 35,
       impact: 8.5,
-      description: `${gameData.homeTeam} tactical system exploits ${gameData.awayTeam} defensive weaknesses`,
-      factors: ['Formation advantage', 'Pressing intensity', 'Transition speed'],
+      description: tacticalIntel?.tacticalEdge || `${gameData.homeTeam} tactical system exploits ${gameData.awayTeam} defensive weaknesses`,
+      factors: tacticalIntel?.expertAnalysis || ['Formation advantage', 'Pressing intensity', 'Transition speed'],
+      scrapedData: tacticalIntel,
     };
   }
 
-  private analyzeForm(gameData: GameData): any {
+  private analyzeForm(gameData: GameData, scraped: any): any {
     const homeWins = gameData.homeStats?.wins || 0;
     const awayWins = gameData.awayStats?.wins || 0;
+    const homeNews = scraped.homeNews?.data;
+    const awayNews = scraped.awayNews?.data;
+    
+    // Factor in news sentiment
+    let impactBoost = 0;
+    if (homeNews?.sentiment === 'positive') impactBoost += 1.5;
+    if (awayNews?.sentiment === 'negative') impactBoost += 1.0;
     
     return {
       weight: 25,
-      impact: homeWins > awayWins ? 7.5 : -2.0,
+      impact: homeWins > awayWins ? 7.5 + impactBoost : -2.0,
       description: `${gameData.homeTeam} in superior form (${gameData.homeStats?.streak})`,
       homeForm: gameData.homeStats?.form || 'Unknown',
       awayForm: gameData.awayStats?.form || 'Unknown',
+      newsSentiment: { home: homeNews?.sentiment, away: awayNews?.sentiment },
     };
   }
 
-  private analyzeSituational(gameData: GameData): any {
+  private analyzeSituational(gameData: GameData, scraped: any): any {
+    const lineupIntel = scraped.lineupIntel?.data;
+    const injuries = scraped.injuries?.data;
+    
     return {
       weight: 20,
       impact: 6.0,
       description: 'Home advantage + high-stakes motivation',
       factors: ['Venue familiarity', 'Travel fatigue (away)', 'Playoff implications'],
+      lineupChanges: lineupIntel?.homeTeamRumors || [],
+      injuryImpact: injuries?.reports || [],
     };
   }
 
-  private analyzePsychological(gameData: GameData): any {
+  private analyzePsychological(gameData: GameData, scraped: any): any {
+    const homeSocial = scraped.homeSocial?.data;
+    const awaySocial = scraped.awaySocial?.data;
+    const homePress = scraped.homePressConference?.data;
+    
+    let impact = 4.5;
+    
+    // Boost impact based on social sentiment
+    if (homeSocial?.twitterSentiment?.includes('Positive')) impact += 1.5;
+    if (homePress?.sentiment === 'Positive and confident') impact += 1.0;
+    
     return {
       weight: 10,
-      impact: 4.5,
+      impact,
       description: 'Strong team morale following recent victories',
       factors: ['Confidence level', 'Coach statements', 'Player sentiment'],
+      socialSentiment: homeSocial,
+      pressConference: homePress,
     };
   }
 
-  private analyzeEnvironmental(gameData: GameData): any {
+  private analyzeEnvironmental(gameData: GameData, scraped: any): any {
     const weather = gameData.weather;
+    const venue = scraped.venueConditions?.data;
+    
+    let impact = weather ? 3.0 : 0;
+    
+    // Factor in pitch conditions
+    if (venue?.pitchCondition === 'Excellent') impact += 1.0;
+    
     return {
       weight: 10,
-      impact: weather ? 3.0 : 0,
+      impact,
       description: weather
         ? `Weather conditions favor ${gameData.homeTeam} playing style`
         : 'Indoor venue - no environmental factors',
       weather: weather || null,
+      venue: venue,
+    };
+  }
+
+  // NEW: Analyze social media sentiment
+  private analyzeSocialSentiment(scraped: any): any {
+    const homeSocial = scraped.homeSocial?.data;
+    const awaySocial = scraped.awaySocial?.data;
+    
+    let impact = 0;
+    if (homeSocial?.confidenceLevel?.includes('High')) impact += 2.5;
+    if (awaySocial?.confidenceLevel?.includes('Low')) impact += 1.5;
+    
+    return {
+      weight: 5,
+      impact,
+      description: 'Fan sentiment and social media buzz analysis',
+      home: homeSocial,
+      away: awaySocial,
+    };
+  }
+
+  // NEW: Analyze referee impact
+  private analyzeRefereeImpact(scraped: any): any {
+    const referee = scraped.refereeData?.data;
+    
+    let impact = 0;
+    if (referee?.homeAdvantage?.includes('+')) impact += 1.5;
+    
+    return {
+      weight: 5,
+      impact,
+      description: 'Referee tends to favor home team in decisions',
+      referee: referee,
+    };
+  }
+
+  // NEW: Analyze betting market intelligence
+  private analyzeBettingMarkets(scraped: any): any {
+    const trends = scraped.bettingTrends?.data;
+    const bookmakers = scraped.bookmakerOdds?.data;
+    
+    let impact = 0;
+    if (trends?.sharpMoney?.includes('Heavy backing')) impact += 2.0;
+    
+    return {
+      weight: 8,
+      impact,
+      description: 'Sharp money betting patterns reveal hidden value',
+      trends: trends,
+      oddsComparison: bookmakers,
+    };
+  }
+
+  // NEW: Analyze venue-specific factors
+  private analyzeVenueFactors(scraped: any): any {
+    const homeVenue = scraped.homeVenueHistory?.data;
+    const venueConditions = scraped.venueConditions?.data;
+    
+    let impact = 0;
+    if (homeVenue?.venueComfort === 'High') impact += 2.5;
+    if (venueConditions?.homeAdvantage?.includes('Strong')) impact += 2.0;
+    
+    return {
+      weight: 7,
+      impact,
+      description: 'Exceptional venue-specific performance history',
+      history: homeVenue,
+      conditions: venueConditions,
+    };
+  }
+
+  // NEW: Analyze travel and fatigue
+  private analyzeFatigueFactors(scraped: any): any {
+    const homeFatigue = scraped.homeTravelFatigue?.data;
+    const awayFatigue = scraped.awayTravelFatigue?.data;
+    
+    let impact = 0;
+    if (homeFatigue?.fatigueRating?.includes('Low')) impact += 1.5;
+    if (awayFatigue?.fatigueRating?.includes('High')) impact += 2.0;
+    
+    return {
+      weight: 5,
+      impact,
+      description: 'Travel and fatigue analysis',
+      home: homeFatigue,
+      away: awayFatigue,
     };
   }
 
   private calculateTrueProbability(analysis: any, game: OddsData): number {
-    // Weighted combination of all factors
+    // Weighted combination of ALL factors including scraped intelligence
     const totalImpact = 
       (analysis.tactical.impact * analysis.tactical.weight / 100) +
       (analysis.form.impact * analysis.form.weight / 100) +
       (analysis.situational.impact * analysis.situational.weight / 100) +
       (analysis.psychological.impact * analysis.psychological.weight / 100) +
-      (analysis.environmental.impact * analysis.environmental.weight / 100);
+      (analysis.environmental.impact * analysis.environmental.weight / 100) +
+      (analysis.social.impact * analysis.social.weight / 100) +
+      (analysis.referee.impact * analysis.referee.weight / 100) +
+      (analysis.betting.impact * analysis.betting.weight / 100) +
+      (analysis.venue.impact * analysis.venue.weight / 100) +
+      (analysis.fatigue.impact * analysis.fatigue.weight / 100);
 
     // Base probability + adjustments
     const baseProb = 0.50;
     const adjustedProb = baseProb + (totalImpact / 100);
+
+    console.log(`📊 Total impact from all factors: ${totalImpact.toFixed(2)}`);
 
     return Math.max(0.45, Math.min(0.75, adjustedProb)); // Clamp between 45-75%
   }

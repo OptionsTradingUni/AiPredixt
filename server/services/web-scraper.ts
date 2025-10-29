@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { googleSearchScraper } from './google-search-scraper';
+import { freeSourcesScraper } from './free-sources-scraper';
 
 export interface ScrapedData {
   source: string;
@@ -36,34 +37,54 @@ export class WebScraperService {
   private lastRequestTime = 0;
   private readonly SIMULATION_MODE = true; // Set to false when real scraping implemented
 
-  // Scrape team statistics from public sources using REAL Google Search
+  // Scrape team statistics from public sources - MULTI-LAYERED FALLBACK
   async scrapeTeamStats(teamName: string, sport: string): Promise<ScrapedData | null> {
     await this.respectRateLimit();
 
     try {
-      console.log(`🕷️  Scraping team stats for ${teamName} using Google Search API...`);
+      console.log(`🕷️  Scraping team stats for ${teamName} - trying multiple sources...`);
 
-      // Use REAL Google Search with fallbacks
-      const searchResults = await googleSearchScraper.searchSportsData(teamName, 'stats');
-      
-      if (searchResults.length === 0) {
-        console.log('⚠️  No search results, using simulation data');
-        return this.getSimulatedTeamStats(teamName, sport);
+      // LAYER 1: Try free data sources (TheSportsDB, FBref, etc.)
+      const freeData = await freeSourcesScraper.gatherAllFreeData(teamName, sport, 'Unknown');
+      if (freeData.sources.length > 0) {
+        console.log(`✅ Got data from ${freeData.sources.length} FREE sources`);
+        
+        // Combine all free source data
+        const combinedData = freeData.sources.reduce((acc, source) => {
+          return { ...acc, [source.source]: source.data };
+        }, {});
+
+        return {
+          source: `FREE sources: ${freeData.sources.map(s => s.source).join(', ')}`,
+          data: {
+            teamName,
+            ...combinedData,
+            sourcesUsed: freeData.totalSources,
+            highQualitySources: freeData.highQuality,
+          },
+          scrapedAt: new Date().toISOString(),
+        };
       }
 
-      // Parse the top result pages for actual stats
-      const stats = await this.extractStatsFromResults(searchResults, teamName);
+      // LAYER 2: Try Google Search scraping
+      const searchResults = await googleSearchScraper.searchSportsData(teamName, 'stats');
+      if (searchResults.length > 0) {
+        const stats = await this.extractStatsFromResults(searchResults, teamName);
+        console.log(`✅ Got stats from Google search: ${searchResults.length} results`);
+        
+        return {
+          source: `Search scraping: ${searchResults.map(r => r.source).join(', ')}`,
+          data: stats,
+          scrapedAt: new Date().toISOString(),
+        };
+      }
 
-      console.log(`✅ Successfully scraped real stats for ${teamName} from ${searchResults.length} sources`);
-
-      return {
-        source: `Real web scraping: ${searchResults.map(r => r.source).join(', ')}`,
-        data: stats,
-        scrapedAt: new Date().toISOString(),
-      };
+      // LAYER 3: Fallback to simulation (last resort)
+      console.log('⚠️  All scraping failed, using simulation data');
+      return this.getSimulatedTeamStats(teamName, sport);
+      
     } catch (error: any) {
       console.error(`❌ Failed to scrape team stats: ${error.message}`);
-      // Fallback to simulation if all scraping fails
       return this.getSimulatedTeamStats(teamName, sport);
     }
   }

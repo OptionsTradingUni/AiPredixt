@@ -532,7 +532,7 @@ export class AdvancedFactorsEngine {
 
     return {
       totalFactors: allFactors.length,
-      categories: [...new Set(allFactors.map(f => f.category))],
+      categories: Array.from(new Set(allFactors.map(f => f.category))),
       scores: allFactors,
       edgeScore,
       hiddenAdvantages,

@@ -1,0 +1,245 @@
+Google APIs client libraries
+
+The Google Search Console API is built on HTTP and JSON, so any standard HTTP client can send requests to it and parse the responses.
+
+However, the Google APIs client libraries provide better language integration, improved security, and support for making calls that require user authorization. The client libraries are available in a number of programming languages; by using them you can avoid the need to manually set up HTTP requests and parse the responses
+
+Use it instead of google search api key 
+For weather api key , it needs 0.0015usd for free version 
+Find other means 
+ Build Deploy HTTP
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '174',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+❌ Failed to warm up Basketball cache: error: relation "predictions" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4312:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4252:20)
+    at async file:///app/dist/index.js:4748:13
+    at async Promise.allSettled (index 1)
+    at async CacheWarmupService.warmupCache (file:///app/dist/index.js:4744:7)
+    at async file:///app/dist/index.js:4728:7
+    at async Timeout._onTimeout (/app/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44) {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '174',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+❌ Failed to warm up Football cache: error: relation "predictions" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4312:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4252:20)
+    at async file:///app/dist/index.js:4748:13
+    at async Promise.allSettled (index 0)
+    at async CacheWarmupService.warmupCache (file:///app/dist/index.js:4744:7)
+    at async file:///app/dist/index.js:4728:7
+    at async Timeout._onTimeout (/app/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44) {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '174',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+❌ Failed to warm up Hockey cache: error: relation "predictions" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4312:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4252:20)
+    at async file:///app/dist/index.js:4748:13
+    at async Promise.allSettled (index 2)
+    at async CacheWarmupService.warmupCache (file:///app/dist/index.js:4744:7)
+    at async file:///app/dist/index.js:4728:7
+    at async Timeout._onTimeout (/app/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44) {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '174',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+🔄 Warming up games cache...
+❌ Failed to warm up games cache: error: relation "games" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedGames (file:///app/dist/index.js:4351:20)
+    at async DatabaseStorage.getGames (file:///app/dist/index.js:4301:25)
+    at async CacheWarmupService.warmupCache (file:///app/dist/index.js:4757:9)
+    at async file:///app/dist/index.js:4728:7
+    at async Timeout._onTimeout (/app/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44) {
+  length: 105,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '125',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+✅ Cache warmup completed successfully
+  hint: undefined,
+  position: '174',
+  internalPosition: undefined,
+🔥 Starting cache warmup...
+🔄 Warming up Football predictions...
+🔄 Warming up Basketball predictions...
+🔄 Warming up Hockey predictions...
+🔄 Warming up Tennis predictions...
+❌ Failed to warm up Football cache: error: relation "predictions" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4312:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4252:20)
+    at async file:///app/dist/index.js:4748:13
+    at async Promise.allSettled (index 0)
+    at async CacheWarmupService.warmupCache (file:///app/dist/index.js:4744:7)
+    at async file:///app/dist/index.js:4728:7
+    at async Timeout._onTimeout (/app/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44) {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+❌ Failed to warm up Tennis cache: error: relation "predictions" does not exist
+    at async file:///app/dist/index.js:4728:7
+    at /app/node_modules/pg-pool/index.js:45:11
+    at async Timeout._onTimeout (/app/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44) {
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+  length: 111,
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+  severity: 'ERROR',
+  internalQuery: undefined,
+  table: undefined,
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4312:22)
+  where: undefined,
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4252:20)
+  column: undefined,
+  schema: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+    at async file:///app/dist/index.js:4748:13
+    at async Promise.allSettled (index 3)
+    at async CacheWarmupService.warmupCache (file:///app/dist/index.js:4744:7)
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '174',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+🔄 Warming up games cache...
+❌ Failed to warm up Hockey cache: error: relation "predictions" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4312:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4252:20)
+    at async file:///app/dist/index.js:4748:13
+    at async Promise.allSettled (index 2)
+    at async CacheWarmupService.warmupCache (file:///app/dist/index.js:4744:7)
+  hint: undefined,
+    at async file:///app/dist/index.js:4728:7
+  position: '174',
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4312:22)
+    at async Timeout._onTimeout (/app/node_modules/node-cron/dist/esm/scheduler/runner.js:70:44) {
+  internalPosition: undefined,
+}
+Also for google search it’s not working I’m unable to get it 
+Advanced factors, news sentiment, social media I want a real data
+Remove anything simulated
+Find means to get it free and no api there are numerous billions of sites you can make this work
+Overall predictions you said it's limited by data quality then improve the quality bro
+Use real data, not fake
+
+
+
+Get real sports stats from sites
+
+
+
+Calculate real stats, not random
+
+
+
+Check data flow, no fakes
+
+Review changes with architect
+
+

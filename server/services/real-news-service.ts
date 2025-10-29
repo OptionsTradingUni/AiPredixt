@@ -83,18 +83,21 @@ export class RealNewsService {
       const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
       const feed = await this.rssParser.parseURL(url);
 
-      return feed.items.slice(0, 5).map(item => ({
-        headline: item.title || 'No title',
-        source: 'Google News',
-        timestamp: item.pubDate || new Date().toISOString(),
-        sentiment: newsSentimentService.analyzeSentiment(item.title + ' ' + (item.contentSnippet || '')),
-        summary: item.contentSnippet?.slice(0, 200) || 'No summary available',
-        fullSummary: item.content || item.contentSnippet,
-        relevance: 'high' as const,
-        category: this.categorizeNews(item.title || ''),
-        url: item.link,
-        publishDate: item.pubDate,
-      }));
+      return feed.items.slice(0, 5).map(item => {
+        const sentimentResult = newsSentimentService.analyzeSentiment(item.title + ' ' + (item.contentSnippet || ''));
+        return {
+          headline: item.title || 'No title',
+          source: 'Google News',
+          timestamp: item.pubDate || new Date().toISOString(),
+          sentiment: sentimentResult.score > 0.3 ? 'positive' as const : sentimentResult.score < -0.3 ? 'negative' as const : 'neutral' as const,
+          summary: item.contentSnippet?.slice(0, 200) || 'No summary available',
+          fullSummary: item.content || item.contentSnippet,
+          relevance: 'high' as const,
+          category: this.categorizeNews(item.title || ''),
+          url: item.link,
+          publishDate: item.pubDate,
+        };
+      });
     } catch (error: any) {
       console.log(`⚠️  Google News failed: ${error.message}`);
       return [];
@@ -117,18 +120,21 @@ export class RealNewsService {
       const url = `https://www.espn.com/espn/rss/${espnSport}/news`;
       const feed = await this.rssParser.parseURL(url);
 
-      return feed.items.slice(0, 5).map(item => ({
-        headline: item.title || 'No title',
-        source: 'ESPN',
-        timestamp: item.pubDate || new Date().toISOString(),
-        sentiment: newsSentimentService.analyzeSentiment(item.title + ' ' + (item.contentSnippet || '')),
-        summary: item.contentSnippet?.slice(0, 200) || 'No summary available',
-        fullSummary: item.content || item.contentSnippet,
-        relevance: 'high' as const,
-        category: this.categorizeNews(item.title || ''),
-        url: item.link,
-        publishDate: item.pubDate,
-      }));
+      return feed.items.slice(0, 5).map(item => {
+        const sentimentResult = newsSentimentService.analyzeSentiment(item.title + ' ' + (item.contentSnippet || ''));
+        return {
+          headline: item.title || 'No title',
+          source: 'ESPN',
+          timestamp: item.pubDate || new Date().toISOString(),
+          sentiment: sentimentResult.score > 0.3 ? 'positive' as const : sentimentResult.score < -0.3 ? 'negative' as const : 'neutral' as const,
+          summary: item.contentSnippet?.slice(0, 200) || 'No summary available',
+          fullSummary: item.content || item.contentSnippet,
+          relevance: 'high' as const,
+          category: this.categorizeNews(item.title || ''),
+          url: item.link,
+          publishDate: item.pubDate,
+        };
+      });
     } catch (error: any) {
       console.log(`⚠️  ESPN RSS failed: ${error.message}`);
       return [];
@@ -151,18 +157,21 @@ export class RealNewsService {
       const url = `http://feeds.bbci.co.uk/sport/${bbcSport}/rss.xml`;
       const feed = await this.rssParser.parseURL(url);
 
-      return feed.items.slice(0, 5).map(item => ({
-        headline: item.title || 'No title',
-        source: 'BBC Sport',
-        timestamp: item.pubDate || new Date().toISOString(),
-        sentiment: newsSentimentService.analyzeSentiment(item.title + ' ' + (item.contentSnippet || '')),
-        summary: item.contentSnippet?.slice(0, 200) || 'No summary available',
-        fullSummary: item.content || item.contentSnippet,
-        relevance: 'high' as const,
-        category: this.categorizeNews(item.title || ''),
-        url: item.link,
-        publishDate: item.pubDate,
-      }));
+      return feed.items.slice(0, 5).map(item => {
+        const sentimentResult = newsSentimentService.analyzeSentiment(item.title + ' ' + (item.contentSnippet || ''));
+        return {
+          headline: item.title || 'No title',
+          source: 'BBC Sport',
+          timestamp: item.pubDate || new Date().toISOString(),
+          sentiment: sentimentResult.score > 0.3 ? 'positive' as const : sentimentResult.score < -0.3 ? 'negative' as const : 'neutral' as const,
+          summary: item.contentSnippet?.slice(0, 200) || 'No summary available',
+          fullSummary: item.content || item.contentSnippet,
+          relevance: 'high' as const,
+          category: this.categorizeNews(item.title || ''),
+          url: item.link,
+          publishDate: item.pubDate,
+        };
+      });
     } catch (error: any) {
       console.log(`⚠️  BBC RSS failed: ${error.message}`);
       return [];
@@ -185,18 +194,21 @@ export class RealNewsService {
       const url = `https://sports.yahoo.com/${yahooSport}/rss.xml`;
       const feed = await this.rssParser.parseURL(url);
 
-      return feed.items.slice(0, 5).map(item => ({
-        headline: item.title || 'No title',
-        source: 'Yahoo Sports',
-        timestamp: item.pubDate || new Date().toISOString(),
-        sentiment: newsSentimentService.analyzeSentiment(item.title + ' ' + (item.contentSnippet || '')),
-        summary: item.contentSnippet?.slice(0, 200) || 'No summary available',
-        fullSummary: item.content || item.contentSnippet,
-        relevance: 'medium' as const,
-        category: this.categorizeNews(item.title || ''),
-        url: item.link,
-        publishDate: item.pubDate,
-      }));
+      return feed.items.slice(0, 5).map(item => {
+        const sentimentResult = newsSentimentService.analyzeSentiment(item.title + ' ' + (item.contentSnippet || ''));
+        return {
+          headline: item.title || 'No title',
+          source: 'Yahoo Sports',
+          timestamp: item.pubDate || new Date().toISOString(),
+          sentiment: sentimentResult.score > 0.3 ? 'positive' as const : sentimentResult.score < -0.3 ? 'negative' as const : 'neutral' as const,
+          summary: item.contentSnippet?.slice(0, 200) || 'No summary available',
+          fullSummary: item.content || item.contentSnippet,
+          relevance: 'medium' as const,
+          category: this.categorizeNews(item.title || ''),
+          url: item.link,
+          publishDate: item.pubDate,
+        };
+      });
     } catch (error: any) {
       console.log(`⚠️  Yahoo RSS failed: ${error.message}`);
       return [];
@@ -227,19 +239,22 @@ export class RealNewsService {
 
       this.apiCallsToday++;
 
-      return (response.data.articles || []).map((article: any) => ({
-        headline: article.title,
-        source: article.source.name,
-        timestamp: article.publishedAt,
-        sentiment: newsSentimentService.analyzeSentiment(article.title + ' ' + (article.description || '')),
-        summary: article.description?.slice(0, 200) || 'No summary available',
-        fullSummary: article.content,
-        relevance: 'high' as const,
-        category: this.categorizeNews(article.title),
-        author: article.author,
-        url: article.url,
-        publishDate: article.publishedAt,
-      }));
+      return (response.data.articles || []).map((article: any) => {
+        const sentimentResult = newsSentimentService.analyzeSentiment(article.title + ' ' + (article.description || ''));
+        return {
+          headline: article.title,
+          source: article.source.name,
+          timestamp: article.publishedAt,
+          sentiment: sentimentResult.score > 0.3 ? 'positive' as const : sentimentResult.score < -0.3 ? 'negative' as const : 'neutral' as const,
+          summary: article.description?.slice(0, 200) || 'No summary available',
+          fullSummary: article.content,
+          relevance: 'high' as const,
+          category: this.categorizeNews(article.title),
+          author: article.author,
+          url: article.url,
+          publishDate: article.publishedAt,
+        };
+      });
     } catch (error: any) {
       console.log(`⚠️  NewsAPI failed: ${error.message}`);
       return [];

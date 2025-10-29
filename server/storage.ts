@@ -34,6 +34,7 @@ export interface IStorage {
   }): Promise<GamesListResponse>;
 }
 
+// MemStorage is available for fallback if database issues occur
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private predictionCache: Map<SportType, { prediction: ApexPrediction; timestamp: number }> = new Map();

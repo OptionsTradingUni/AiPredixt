@@ -533,6 +533,53 @@ export class PredictionEngine {
     return `${gameData.awayTeam} offensive system relies entirely on ${gameData.injuries?.[0]?.split(' ')[0] || 'their star player'}, who is questionable. Even at full strength, our matchup analysis shows this player has historically struggled against ${gameData.homeTeam} defensive scheme (15% efficiency drop). Without their primary weapon, ${gameData.awayTeam} lacks the tactical flexibility to adjust mid-game.`;
   }
 
+  /**
+   * Calculate dynamic confidence score based on multiple factors
+   */
+  private calculateDynamicConfidence(
+    edge: number,
+    probability: number,
+    marketLiquidity: 'High' | 'Medium' | 'Low',
+    dataSourceCount: number,
+    marketId?: string
+  ): number {
+    // Negative edges should have very low confidence
+    if (edge < -2) {
+      const negativeConfidence = Math.max(15, 40 + (edge * 2)); // -10 edge → 20 confidence
+      return Math.round(negativeConfidence);
+    }
+    
+    // Base confidence from edge magnitude (higher edge = higher confidence)
+    let confidence = 50 + (Math.abs(edge) * 3.5);
+    
+    // Adjust based on probability (extremes are harder to predict accurately)
+    const probabilityAdjustment = -Math.abs(probability - 50) * 0.15;
+    confidence += probabilityAdjustment;
+    
+    // Market liquidity adjustment (more liquid = more reliable)
+    const liquidityBonus = marketLiquidity === 'High' ? 8 : marketLiquidity === 'Medium' ? 4 : 0;
+    confidence += liquidityBonus;
+    
+    // Data source quality adjustment
+    const dataQualityBonus = Math.min(12, dataSourceCount * 1.5);
+    confidence += dataQualityBonus;
+    
+    // Bonus for strong positive edges
+    if (edge > 5) {
+      confidence += 5;
+    } else if (edge < 0) {
+      confidence *= 0.8; // Slight reduction for small negative edges
+    }
+    
+    // Deterministic variation based on market characteristics (not random)
+    // Use probability and edge to create subtle differences
+    const deterministicVariation = ((probability * 0.1 + edge * 0.3) % 5) - 2.5;
+    confidence += deterministicVariation;
+    
+    // Cap at reasonable bounds
+    return Math.min(95, Math.max(25, Math.round(confidence)));
+  }
+
   private generateAllBettingMarkets(
     game: EnhancedOddsData,
     gameData: GameData | null,
@@ -589,7 +636,7 @@ export class PredictionEngine {
         },
         impliedProbability: homeImplied,
         edge: homeEdge,
-        confidenceScore: Math.min(95, Math.abs(homeEdge) * 5 + 50),
+        confidenceScore: this.calculateDynamicConfidence(homeEdge, homeWinProb, 'High', dataSources.length),
         recommendedStake: {
           kellyFraction: `${homeKelly.toFixed(2)} Units`,
           unitDescription: 'Quarter-Kelly formula',
@@ -616,7 +663,7 @@ export class PredictionEngine {
         },
         impliedProbability: awayImplied,
         edge: awayEdge,
-        confidenceScore: Math.min(95, Math.abs(awayEdge) * 5 + 50),
+        confidenceScore: this.calculateDynamicConfidence(awayEdge, awayWinProb, 'High', dataSources.length),
         recommendedStake: {
           kellyFraction: `${awayKelly.toFixed(2)} Units`,
           unitDescription: 'Quarter-Kelly formula',
@@ -644,7 +691,7 @@ export class PredictionEngine {
           },
           impliedProbability: drawImplied,
           edge: drawEdge,
-          confidenceScore: Math.min(95, Math.abs(drawEdge) * 5 + 40),
+          confidenceScore: this.calculateDynamicConfidence(drawEdge, drawProb, 'Medium', dataSources.length),
           recommendedStake: {
             kellyFraction: `${drawKelly.toFixed(2)} Units`,
             unitDescription: 'Quarter-Kelly formula',
@@ -683,7 +730,7 @@ export class PredictionEngine {
         },
         impliedProbability: spreadImplied,
         edge: spreadEdge,
-        confidenceScore: Math.min(95, Math.abs(spreadEdge) * 5 + 55),
+        confidenceScore: this.calculateDynamicConfidence(spreadEdge, spreadProb, 'High', dataSources.length),
         recommendedStake: {
           kellyFraction: `${spreadKelly.toFixed(2)} Units`,
           unitDescription: 'Quarter-Kelly formula',
@@ -732,7 +779,7 @@ export class PredictionEngine {
         },
         impliedProbability: overImplied,
         edge: overEdge,
-        confidenceScore: Math.min(95, Math.abs(overEdge) * 5 + 52),
+        confidenceScore: this.calculateDynamicConfidence(overEdge, overProb, 'High', dataSources.length),
         recommendedStake: {
           kellyFraction: `${overKelly.toFixed(2)} Units`,
           unitDescription: 'Quarter-Kelly formula',
@@ -760,7 +807,7 @@ export class PredictionEngine {
         },
         impliedProbability: underImplied,
         edge: underEdge,
-        confidenceScore: Math.min(95, Math.abs(underEdge) * 5 + 52),
+        confidenceScore: this.calculateDynamicConfidence(underEdge, underProb, 'High', dataSources.length),
         recommendedStake: {
           kellyFraction: `${underKelly.toFixed(2)} Units`,
           unitDescription: 'Quarter-Kelly formula',
@@ -810,7 +857,7 @@ export class PredictionEngine {
         },
         impliedProbability: bttsImplied,
         edge: bttsEdge,
-        confidenceScore: Math.min(95, Math.abs(bttsEdge) * 5 + 48),
+        confidenceScore: this.calculateDynamicConfidence(bttsEdge, bttsProb, 'Medium', dataSources.length),
         recommendedStake: {
           kellyFraction: `${bttsKelly.toFixed(2)} Units`,
           unitDescription: 'Quarter-Kelly formula',
@@ -854,7 +901,7 @@ export class PredictionEngine {
           },
           impliedProbability: homeDrawImplied,
           edge: homeDrawEdge,
-          confidenceScore: Math.min(95, Math.abs(homeDrawEdge) * 5 + 55),
+          confidenceScore: this.calculateDynamicConfidence(homeDrawEdge, homeDrawProb, 'Medium', dataSources.length),
           recommendedStake: {
             kellyFraction: `${homeDrawKelly.toFixed(2)} Units`,
             unitDescription: 'Quarter-Kelly formula',
@@ -885,7 +932,7 @@ export class PredictionEngine {
           },
           impliedProbability: awayDrawImplied,
           edge: awayDrawEdge,
-          confidenceScore: Math.min(95, Math.abs(awayDrawEdge) * 5 + 55),
+          confidenceScore: this.calculateDynamicConfidence(awayDrawEdge, awayDrawProb, 'Medium', dataSources.length),
           recommendedStake: {
             kellyFraction: `${awayDrawKelly.toFixed(2)} Units`,
             unitDescription: 'Quarter-Kelly formula',
@@ -916,7 +963,7 @@ export class PredictionEngine {
           },
           impliedProbability: homeAwayImplied,
           edge: homeAwayEdge,
-          confidenceScore: Math.min(95, Math.abs(homeAwayEdge) * 5 + 60),
+          confidenceScore: this.calculateDynamicConfidence(homeAwayEdge, homeAwayProb, 'Low', dataSources.length),
           recommendedStake: {
             kellyFraction: `${homeAwayKelly.toFixed(2)} Units`,
             unitDescription: 'Quarter-Kelly formula',
@@ -964,7 +1011,7 @@ export class PredictionEngine {
           },
           impliedProbability: htHomeImplied,
           edge: htHomeEdge,
-          confidenceScore: Math.min(90, Math.abs(htHomeEdge) * 5 + 45),
+          confidenceScore: this.calculateDynamicConfidence(htHomeEdge, htHomeProb, 'Medium', dataSources.length),
           recommendedStake: {
             kellyFraction: `${htHomeKelly.toFixed(2)} Units`,
             unitDescription: 'Quarter-Kelly formula',
@@ -996,7 +1043,7 @@ export class PredictionEngine {
           },
           impliedProbability: htAwayImplied,
           edge: htAwayEdge,
-          confidenceScore: Math.min(90, Math.abs(htAwayEdge) * 5 + 45),
+          confidenceScore: this.calculateDynamicConfidence(htAwayEdge, htAwayProb, 'Medium', dataSources.length),
           recommendedStake: {
             kellyFraction: `${htAwayKelly.toFixed(2)} Units`,
             unitDescription: 'Quarter-Kelly formula',
@@ -1029,7 +1076,7 @@ export class PredictionEngine {
             },
             impliedProbability: htDrawImplied,
             edge: htDrawEdge,
-            confidenceScore: Math.min(90, Math.abs(htDrawEdge) * 5 + 42),
+            confidenceScore: this.calculateDynamicConfidence(htDrawEdge, htDrawProb, 'Medium', dataSources.length),
             recommendedStake: {
               kellyFraction: `${htDrawKelly.toFixed(2)} Units`,
               unitDescription: 'Quarter-Kelly formula',
@@ -1085,7 +1132,7 @@ export class PredictionEngine {
             },
             impliedProbability: csImplied,
             edge: csEdge,
-            confidenceScore: Math.min(85, Math.abs(csEdge) * 5 + 35),
+            confidenceScore: this.calculateDynamicConfidence(csEdge, csProb, 'Low', dataSources.length),
             recommendedStake: {
               kellyFraction: `${csKelly.toFixed(2)} Units`,
               unitDescription: 'Quarter-Kelly formula',

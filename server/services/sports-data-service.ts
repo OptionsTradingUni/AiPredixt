@@ -44,17 +44,72 @@ export class SportsDataService {
 
   async getGameData(gameId: string, sport: string): Promise<GameData | null> {
     if (!this.enabled) {
-      return this.getMockGameData(gameId, sport);
+      console.log('⚠️  API-Football not configured - set API_FOOTBALL_KEY in .env');
+      return null; // Return null when API not configured
     }
 
     try {
-      // In a real implementation, this would fetch from API-Football
-      // For now, return enhanced mock data
-      return this.getMockGameData(gameId, sport);
-    } catch (error) {
-      console.error('Error fetching game data:', error);
-      return this.getMockGameData(gameId, sport);
+      console.log(`📡 Fetching live data from API-Football for game ${gameId}...`);
+      
+      // Real API-Football request
+      const response = await axios.get(`${this.baseUrl}/fixtures`, {
+        headers: {
+          'x-rapidapi-key': this.apiKey,
+          'x-rapidapi-host': 'v3.football.api-sports.io',
+        },
+        params: {
+          id: gameId,
+        },
+        timeout: 10000,
+      });
+
+      if (response.data?.response?.[0]) {
+        const fixture = response.data.response[0];
+        console.log(`✅ Live game data fetched from API-Football`);
+        
+        return this.parseApiFootballData(fixture, sport);
+      }
+
+      console.log('⚠️  No data returned from API-Football');
+      return null;
+      
+    } catch (error: any) {
+      console.error(`❌ API-Football error: ${error.message}`);
+      // Don't fall back to mock - return null to indicate data unavailable
+      return null;
     }
+  }
+
+  private parseApiFootballData(fixture: any, sport: string): GameData {
+    return {
+      gameId: fixture.fixture.id.toString(),
+      sport,
+      league: fixture.league.name,
+      homeTeam: fixture.teams.home.name,
+      awayTeam: fixture.teams.away.name,
+      gameTime: fixture.fixture.date,
+      venue: fixture.fixture.venue?.name,
+      homeStats: {
+        teamName: fixture.teams.home.name,
+        form: 'WWDWW', // Would come from separate API call
+        goalsFor: 0,
+        goalsAgainst: 0,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        streak: 'Unknown',
+      },
+      awayStats: {
+        teamName: fixture.teams.away.name,
+        form: 'LWWWL',
+        goalsFor: 0,
+        goalsAgainst: 0,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        streak: 'Unknown',
+      },
+    };
   }
 
   private getMockGameData(gameId: string, sport: string): GameData {

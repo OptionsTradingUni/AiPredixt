@@ -50,9 +50,11 @@ export class MemStorage implements IStorage {
     }
 
     try {
-      console.log(`🚀 Generating LIVE prediction for ${targetSport}...`);
+      console.log(`🚀 Generating prediction for ${targetSport} using 6-phase system...`);
+      console.log(`📡 Free APIs: Odds API (${process.env.ODDS_API_KEY ? 'configured' : 'not configured'}), API-Football (${process.env.API_FOOTBALL_KEY ? 'configured' : 'not configured'})`);
       
-      // Generate real prediction using the full 6-phase system
+      // Generate prediction using the full 6-phase system
+      // Will use real API data when configured, simulated intelligence otherwise
       const prediction = await predictionEngine.selectApexPick(targetSport);
       
       // Cache the prediction
@@ -61,15 +63,14 @@ export class MemStorage implements IStorage {
         timestamp: now,
       });
       
-      console.log(`✅ Live prediction generated and cached for ${targetSport}`);
+      console.log(`✅ Prediction generated and cached for ${targetSport}`);
+      console.log(`   Using: ${process.env.ODDS_API_KEY ? 'Real odds data' : 'Simulated odds'} + Scraped intelligence framework`);
       return prediction;
       
     } catch (error) {
-      console.error('Error generating prediction, falling back to mock:', error);
-      // Fallback to mock data if prediction fails
-      const mockPredictions = this.generateMockPredictions();
-      const fallback = mockPredictions.find(p => p.sport === targetSport) || mockPredictions[0];
-      return fallback;
+      console.error('❌ Prediction generation failed:', error);
+      // Don't fall back to mock - re-throw to show real errors
+      throw error;
     }
   }
 

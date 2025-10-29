@@ -334,10 +334,21 @@ export class EnhancedOddsService {
 
   private getRandomTeam(sport: string): string {
     const teams: Record<string, string[]> = {
-      soccer: ['Manchester City', 'Liverpool', 'Chelsea', 'Arsenal', 'Real Madrid', 'Barcelona', 'Bayern Munich', 'PSG', 'Inter Milan', 'AC Milan', 'Juventus', 'Atletico Madrid', 'Manchester United', 'Tottenham', 'Dortmund'],
-      basketball: ['Lakers', 'Warriors', 'Celtics', 'Heat', 'Bucks', 'Nuggets', 'Suns', 'Nets', 'Clippers', '76ers', 'Mavericks', 'Grizzlies', 'Cavaliers', 'Knicks', 'Kings'],
-      icehockey: ['Maple Leafs', 'Bruins', 'Oilers', 'Avalanche', 'Lightning', 'Rangers', 'Panthers', 'Stars', 'Hurricanes', 'Devils', 'Knights', 'Capitals', 'Wild', 'Canucks', 'Flames'],
-      tennis: ['Djokovic', 'Alcaraz', 'Sinner', 'Medvedev', 'Rublev', 'Tsitsipas', 'Zverev', 'Ruud', 'Fritz', 'Rune', 'Swiatek', 'Sabalenka', 'Gauff', 'Pegula', 'Rybakina'],
+      soccer: [
+        // Premier League
+        'Manchester City', 'Liverpool', 'Chelsea', 'Arsenal', 'Manchester United', 'Tottenham', 'Newcastle', 'Aston Villa', 'Brighton', 'West Ham',
+        // La Liga
+        'Real Madrid', 'Barcelona', 'Atletico Madrid', 'Sevilla', 'Valencia', 'Real Betis', 'Villarreal', 'Athletic Bilbao',
+        // Bundesliga
+        'Bayern Munich', 'Dortmund', 'RB Leipzig', 'Bayer Leverkusen', 'Union Berlin', 'Eintracht Frankfurt',
+        // Serie A
+        'Inter Milan', 'AC Milan', 'Juventus', 'Napoli', 'Roma', 'Lazio', 'Atalanta', 'Fiorentina',
+        // Ligue 1
+        'PSG', 'Monaco', 'Marseille', 'Lyon', 'Lille', 'Nice', 'Lens', 'Rennes'
+      ],
+      basketball: ['Lakers', 'Warriors', 'Celtics', 'Heat', 'Bucks', 'Nuggets', 'Suns', 'Nets', 'Clippers', '76ers', 'Mavericks', 'Grizzlies', 'Cavaliers', 'Knicks', 'Kings', 'Pacers', 'Hawks', 'Magic', 'Pelicans', 'Thunder'],
+      icehockey: ['Maple Leafs', 'Bruins', 'Oilers', 'Avalanche', 'Lightning', 'Rangers', 'Panthers', 'Stars', 'Hurricanes', 'Devils', 'Knights', 'Capitals', 'Wild', 'Canucks', 'Flames', 'Jets', 'Islanders', 'Predators', 'Kraken', 'Blues'],
+      tennis: ['Djokovic', 'Alcaraz', 'Sinner', 'Medvedev', 'Rublev', 'Tsitsipas', 'Zverev', 'Ruud', 'Fritz', 'Rune', 'Swiatek', 'Sabalenka', 'Gauff', 'Pegula', 'Rybakina', 'Jabeur', 'Krejcikova', 'Muchova', 'Kasatkina', 'Ostapenko'],
     };
     
     const sportTeams = teams[sport] || teams.soccer;
@@ -358,7 +369,7 @@ export class EnhancedOddsService {
     return {
       gameId: `${homeTeam.replace(/\s/g, '-').toLowerCase()}-${awayTeam.replace(/\s/g, '-').toLowerCase()}-${gameDate}`,
       sport,
-      league: this.guessLeague(sport),
+      league: this.guessLeague(sport, homeTeam, awayTeam),
       homeTeam,
       awayTeam,
       gameTime: time.toISOString(),
@@ -411,14 +422,47 @@ export class EnhancedOddsService {
     return mapping[sport] || 'soccer_epl';
   }
 
-  private guessLeague(sport: string): string {
-    const leagues: Record<string, string> = {
-      soccer: 'Premier League',
-      basketball: 'NBA',
-      icehockey: 'NHL',
-      tennis: 'ATP',
-    };
-    return leagues[sport] || 'Unknown League';
+  private guessLeague(sport: string, homeTeam?: string, awayTeam?: string): string {
+    // For soccer, assign leagues based on team names
+    if (sport === 'soccer') {
+      const englishTeams = ['Manchester City', 'Liverpool', 'Chelsea', 'Arsenal', 'Manchester United', 'Tottenham', 'Newcastle', 'Aston Villa', 'Brighton', 'West Ham'];
+      const spanishTeams = ['Real Madrid', 'Barcelona', 'Atletico Madrid', 'Sevilla', 'Valencia', 'Real Betis', 'Villarreal', 'Athletic Bilbao'];
+      const germanTeams = ['Bayern Munich', 'Dortmund', 'RB Leipzig', 'Bayer Leverkusen', 'Union Berlin', 'Eintracht Frankfurt'];
+      const italianTeams = ['Inter Milan', 'AC Milan', 'Juventus', 'Napoli', 'Roma', 'Lazio', 'Atalanta', 'Fiorentina'];
+      const frenchTeams = ['PSG', 'Monaco', 'Marseille', 'Lyon', 'Lille', 'Nice', 'Lens', 'Rennes'];
+      
+      const teamName = homeTeam || awayTeam || '';
+      
+      if (englishTeams.some(t => teamName.includes(t))) return 'Premier League';
+      if (spanishTeams.some(t => teamName.includes(t))) return 'La Liga';
+      if (germanTeams.some(t => teamName.includes(t))) return 'Bundesliga';
+      if (italianTeams.some(t => teamName.includes(t))) return 'Serie A';
+      if (frenchTeams.some(t => teamName.includes(t))) return 'Ligue 1';
+      
+      // Random assignment if no match found
+      const allLeagues = ['Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1', 'Champions League', 'Europa League'];
+      return allLeagues[Math.floor(Math.random() * allLeagues.length)];
+    }
+    
+    // For basketball, diversify NBA conferences and international leagues
+    if (sport === 'basketball') {
+      const leagues = ['NBA', 'EuroLeague', 'NCAA', 'NBA G League'];
+      return leagues[Math.floor(Math.random() * leagues.length)];
+    }
+    
+    // For ice hockey, diversify between NHL and other leagues
+    if (sport === 'icehockey') {
+      const leagues = ['NHL', 'KHL', 'SHL', 'Liiga'];
+      return leagues[Math.floor(Math.random() * leagues.length)];
+    }
+    
+    // For tennis, diversify between tour types
+    if (sport === 'tennis') {
+      const leagues = ['ATP', 'WTA', 'Grand Slam', 'ATP Challengers'];
+      return leagues[Math.floor(Math.random() * leagues.length)];
+    }
+    
+    return 'Unknown League';
   }
 
   private parseOddsResponse(data: any[], sport: string, sources: string[]): EnhancedOddsData[] {

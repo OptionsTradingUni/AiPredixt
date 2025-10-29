@@ -4,6 +4,16 @@ import { storage } from "./storage";
 import { SportType } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint for Railway
+  app.get("/health", (req, res) => {
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || "development"
+    });
+  });
+
   // Get apex prediction
   app.get("/api/apex-prediction", async (req, res) => {
     try {

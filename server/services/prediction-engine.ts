@@ -131,7 +131,10 @@ export class PredictionEngine {
   }
 
   // PHASE 4: Final Selection & Risk Management
-  async selectApexPick(sport: SportType): Promise<ApexPrediction> {
+  async selectApexPick(sport: SportType): Promise<{ 
+    prediction: ApexPrediction; 
+    telemetry: { sources: string[]; totalGames: number; apis: { oddsApi: boolean; sportsApi: boolean } } 
+  }> {
     console.log(`🎯 PHASE 4: Selecting Apex Pick for ${sport}...`);
 
     // Scan all games
@@ -140,6 +143,9 @@ export class PredictionEngine {
     if (shortlist.length === 0) {
       throw new Error('No high-value games found');
     }
+
+    // Extract telemetry from all games
+    const allSources = Array.from(new Set(shortlist.flatMap(g => g.sources)));
 
     // Deep dive on top 3-5 candidates
     const candidates = await Promise.all(
@@ -175,11 +181,24 @@ export class PredictionEngine {
 
     console.log(`✅ Apex Pick selected: ${prediction.teams.home} ${prediction.betType} (EV: ${prediction.edge.toFixed(2)}%)`);
 
-    return prediction;
+    return {
+      prediction,
+      telemetry: {
+        sources: allSources,
+        totalGames: shortlist.length,
+        apis: {
+          oddsApi: !!process.env.ODDS_API_KEY,
+          sportsApi: !!process.env.API_FOOTBALL_KEY,
+        },
+      },
+    };
   }
 
   // PHASE 4B: Analyze ALL Games (not just top pick)
-  async analyzeAllGames(sport: SportType): Promise<ApexPrediction[]> {
+  async analyzeAllGames(sport: SportType): Promise<{ 
+    predictions: ApexPrediction[]; 
+    telemetry: { sources: string[]; totalGames: number; apis: { oddsApi: boolean; sportsApi: boolean } } 
+  }> {
     console.log(`🎯 Analyzing ALL upcoming ${sport} games...`);
 
     // Scan all games
@@ -187,8 +206,21 @@ export class PredictionEngine {
 
     if (shortlist.length === 0) {
       console.log(`⚠️  No high-value games found for ${sport}`);
-      return [];
+      return {
+        predictions: [],
+        telemetry: {
+          sources: [],
+          totalGames: 0,
+          apis: {
+            oddsApi: !!process.env.ODDS_API_KEY,
+            sportsApi: !!process.env.API_FOOTBALL_KEY,
+          },
+        },
+      };
     }
+
+    // Extract telemetry from all games
+    const allSources = Array.from(new Set(shortlist.flatMap(g => g.sources)));
 
     console.log(`📊 Analyzing ${shortlist.length} ${sport} games in parallel...`);
 
@@ -232,7 +264,17 @@ export class PredictionEngine {
     console.log(`✅ Successfully analyzed ${validPredictions.length} ${sport} games`);
     console.log(`📊 Top prediction: ${validPredictions[0]?.match} (EV: ${validPredictions[0]?.edge.toFixed(2)}%)`);
 
-    return validPredictions;
+    return {
+      predictions: validPredictions,
+      telemetry: {
+        sources: allSources,
+        totalGames: shortlist.length,
+        apis: {
+          oddsApi: !!process.env.ODDS_API_KEY,
+          sportsApi: !!process.env.API_FOOTBALL_KEY,
+        },
+      },
+    };
   }
 
   // Helper methods for analysis

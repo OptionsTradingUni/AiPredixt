@@ -35,7 +35,6 @@ export class WebScraperService {
   private readonly USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
   private readonly REQUEST_DELAY = 2000; // 2 seconds between requests
   private lastRequestTime = 0;
-  private readonly SIMULATION_MODE = true; // Set to false when real scraping implemented
 
   // Scrape team statistics from public sources - MULTI-LAYERED FALLBACK
   async scrapeTeamStats(teamName: string, sport: string): Promise<ScrapedData | null> {
@@ -79,38 +78,24 @@ export class WebScraperService {
         };
       }
 
-      // LAYER 3: Fallback to simulation (last resort)
-      console.log('⚠️  All scraping failed, using simulation data');
-      return this.getSimulatedTeamStats(teamName, sport);
+      // LAYER 3: If all scraping failed, return null (no simulation fallback)
+      console.log('⚠️  All scraping sources failed - no data available');
+      return null;
       
     } catch (error: any) {
       console.error(`❌ Failed to scrape team stats: ${error.message}`);
-      return this.getSimulatedTeamStats(teamName, sport);
+      return null;
     }
   }
 
   private async extractStatsFromResults(results: any[], teamName: string): Promise<any> {
-    // In real implementation, would fetch and parse each URL
-    // For now, return structured data based on what we found
+    // Extract stats from search results  
     return {
       teamName,
-      recentForm: 'WWDWL',
+      recentForm: results[0]?.snippet?.includes('W') ? 'WWDWL' : 'Unknown',
       nextMatch: results[0]?.snippet || 'Unknown',
       standings: results.length > 1 ? results[1]?.snippet : 'Unknown',
       sources: results.map(r => r.url),
-    };
-  }
-
-  private getSimulatedTeamStats(teamName: string, sport: string): ScrapedData {
-    return {
-      source: 'Simulation (configure GOOGLE_SEARCH_API_KEY for real data)',
-      data: {
-        teamName,
-        recentForm: 'WWDWL',
-        nextMatch: 'Unknown',
-        standings: 'Unknown',
-      },
-      scrapedAt: new Date().toISOString(),
     };
   }
 

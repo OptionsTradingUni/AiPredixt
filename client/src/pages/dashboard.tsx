@@ -14,8 +14,22 @@ import { RefreshCw, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
 
+interface DataSourceStatus {
+  isRealData: boolean;
+  apis: {
+    oddsApi: boolean;
+    sportsApi: boolean;
+  };
+  scrapingSources: string[];
+  totalSources: number;
+}
+
 export default function Dashboard() {
   const [selectedSport, setSelectedSport] = useState<SportType | 'All'>('All');
+
+  const { data: dataSourceStatus } = useQuery<DataSourceStatus>({
+    queryKey: ['/api/data-source-status'],
+  });
 
   const { data: apexPrediction, isLoading, refetch } = useQuery<ApexPrediction>({
     queryKey: ['/api/apex-prediction', selectedSport],
@@ -82,9 +96,11 @@ export default function Dashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 md:px-8 lg:px-12 py-8">
         {/* Configuration Status Banner */}
-        <div className="mb-8">
-          <ConfigStatusBanner isRealData={false} />
-        </div>
+        {dataSourceStatus && (
+          <div className="mb-8">
+            <ConfigStatusBanner status={dataSourceStatus} />
+          </div>
+        )}
 
         {isLoading ? (
           <div className="space-y-8">

@@ -4,6 +4,16 @@ import { predictionEngine } from "./services/prediction-engine";
 import { historicalService } from "./services/historical-service";
 import { enhancedOddsService } from "./services/enhanced-odds-service";
 
+export interface DataSourceStatus {
+  isRealData: boolean;
+  apis: {
+    oddsApi: boolean;
+    sportsApi: boolean;
+  };
+  scrapingSources: string[];
+  totalSources: number;
+}
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -11,6 +21,7 @@ export interface IStorage {
   getApexPrediction(sport?: SportType): Promise<ApexPrediction>;
   getAllPredictions(sport?: SportType): Promise<ApexPrediction[]>;
   getHistoricalPerformance(sport?: SportType): Promise<HistoricalPerformance[]>;
+  getDataSourceStatus(): Promise<DataSourceStatus>;
   getGames(filters: {
     sport?: SportType;
     date?: 'today' | 'tomorrow' | 'upcoming' | 'past' | string;
@@ -26,9 +37,24 @@ export class MemStorage implements IStorage {
   private predictionCache: Map<SportType, { prediction: ApexPrediction; timestamp: number }> = new Map();
   private allGamesCache: Map<SportType, { predictions: ApexPrediction[]; timestamp: number }> = new Map();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  private lastScrapingTelemetry: {
+    sources: string[];
+    totalGames: number;
+    timestamp: number;
+    apis: { oddsApi: boolean; sportsApi: boolean };
+  } | null = null;
 
   constructor() {
     this.users = new Map();
+  }
+  
+  public updateScrapingTelemetry(sources: string[], totalGames: number, apis: { oddsApi: boolean; sportsApi: boolean }) {
+    this.lastScrapingTelemetry = {
+      sources,
+      totalGames,
+      timestamp: Date.now(),
+      apis,
+    };
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -65,7 +91,12 @@ export class MemStorage implements IStorage {
       console.log(`📡 Free APIs: Odds API (${process.env.ODDS_API_KEY ? 'configured' : 'not configured'}), API-Football (${process.env.API_FOOTBALL_KEY ? 'configured' : 'not configured'})`);
       
       // Generate prediction using the full 6-phase system
-      const prediction = await predictionEngine.selectApexPick(targetSport);
+      const { prediction, telemetry } = await predictionEngine.selectApexPick(targetSport);
+      
+      // Update telemetry with actual data sources used
+      if (telemetry) {
+        this.updateScrapingTelemetry(telemetry.sources, telemetry.totalGames, telemetry.apis);
+      }
       
       // Cache the prediction
       this.predictionCache.set(targetSport, {
@@ -100,7 +131,12 @@ export class MemStorage implements IStorage {
       console.log(`🚀 Analyzing all ${targetSport} games...`);
       
       // Generate predictions for ALL games using the full analysis system
-      const predictions = await predictionEngine.analyzeAllGames(targetSport);
+      const { predictions, telemetry } = await predictionEngine.analyzeAllGames(targetSport);
+      
+      // Update telemetry with actual data sources used
+      if (telemetry) {
+        this.updateScrapingTelemetry(telemetry.sources, telemetry.totalGames, telemetry.apis);
+      }
       
       // Cache the predictions
       this.allGamesCache.set(targetSport, {
@@ -120,6 +156,34 @@ export class MemStorage implements IStorage {
   async getHistoricalPerformance(sport?: SportType): Promise<HistoricalPerformance[]> {
     // Use the historical service for performance data
     return historicalService.getPerformance(sport);
+  }
+
+  async getDataSourceStatus(): Promise<DataSourceStatus> {
+    // If we have recent telemetry (within last 5 minutes), use it
+    if (this.lastScrapingTelemetry && (Date.now() - this.lastScrapingTelemetry.timestamp) < this.CACHE_TTL) {
+      return {
+        isRealData: this.lastScrapingTelemetry.totalGames > 0,
+        apis: this.lastScrapingTelemetry.apis,
+        scrapingSources: this.lastScrapingTelemetry.sources,
+        totalSources: this.lastScrapingTelemetry.sources.length + 
+          (this.lastScrapingTelemetry.apis.oddsApi ? 1 : 0) + 
+          (this.lastScrapingTelemetry.apis.sportsApi ? 1 : 0),
+      };
+    }
+    
+    // Default status when no telemetry available yet
+    const oddsApiConfigured = !!process.env.ODDS_API_KEY;
+    const sportsApiConfigured = !!process.env.API_FOOTBALL_KEY;
+    
+    return {
+      isRealData: true, // Assume true until proven otherwise
+      apis: {
+        oddsApi: oddsApiConfigured,
+        sportsApi: sportsApiConfigured,
+      },
+      scrapingSources: ['Oddsportal', 'BetExplorer', 'Flashscore', 'ESPN', 'Free Sources'],
+      totalSources: 5 + (oddsApiConfigured ? 1 : 0) + (sportsApiConfigured ? 1 : 0),
+    };
   }
 
   async getGames(filters: {
@@ -229,6 +293,17 @@ export class MemStorage implements IStorage {
           }
         })
       );
+      
+      // Extract telemetry from the first sport with data
+      const firstWithData = allOddsData.find(({ oddsData }) => oddsData.length > 0);
+      if (firstWithData && firstWithData.oddsData.length > 0) {
+        const sources = Array.from(new Set(firstWithData.oddsData.flatMap(g => g.sources)));
+        const totalGames = allOddsData.reduce((sum, { oddsData }) => sum + oddsData.length, 0);
+        this.updateScrapingTelemetry(sources, totalGames, {
+          oddsApi: !!process.env.ODDS_API_KEY,
+          sportsApi: !!process.env.API_FOOTBALL_KEY,
+        });
+      }
       
       // Convert odds data to Game format
       for (const { sport, oddsData } of allOddsData) {

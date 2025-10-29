@@ -11,7 +11,7 @@ import { Link } from 'wouter';
 
 export default function GamesPage() {
   const [selectedSport, setSelectedSport] = useState<SportType | 'All'>('All');
-  const [selectedDate, setSelectedDate] = useState<'today' | 'tomorrow' | 'upcoming'>('today');
+  const [selectedDate, setSelectedDate] = useState<'today' | 'tomorrow' | 'upcoming' | 'past'>('today');
 
   const { data: gamesData, isLoading } = useQuery<GamesListResponse>({
     queryKey: ['/api/games', selectedSport, selectedDate],
@@ -121,7 +121,7 @@ export default function GamesPage() {
 
       {/* Date Filter */}
       <Tabs value={selectedDate} onValueChange={(value) => setSelectedDate(value as typeof selectedDate)} data-testid="filter-date">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
           <TabsTrigger value="today" data-testid="button-date-today">
             <Calendar className="mr-2 h-4 w-4" />
             Today
@@ -132,7 +132,11 @@ export default function GamesPage() {
           </TabsTrigger>
           <TabsTrigger value="upcoming" data-testid="button-date-upcoming">
             <TrendingUp className="mr-2 h-4 w-4" />
-            All Upcoming
+            Upcoming
+          </TabsTrigger>
+          <TabsTrigger value="past" data-testid="button-date-past">
+            <Trophy className="mr-2 h-4 w-4" />
+            Past Results
           </TabsTrigger>
         </TabsList>
       </Tabs>

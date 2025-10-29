@@ -47,6 +47,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get data source status
+  app.get("/api/data-source-status", async (req, res) => {
+    try {
+      const status = await storage.getDataSourceStatus();
+      res.json(status);
+    } catch (error) {
+      console.error('Error fetching data source status:', error);
+      res.status(500).json({ error: 'Failed to fetch data source status' });
+    }
+  });
+
   // Get historical performance data
   app.get("/api/historical-performance", async (req, res) => {
     try {

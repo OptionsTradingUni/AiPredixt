@@ -382,8 +382,8 @@ export class NewsSentimentService {
         ? newsResult.articles.reduce((sum, a) => sum + a.sentiment.confidence, 0) / newsResult.articles.length
         : 0,
       recentHeadlines: newsResult.articles.slice(0, 5).map(a => a.title),
-      positiveSignals: Array.from(positiveWords).slice(0, 10),
-      negativeSignals: Array.from(negativeWords).slice(0, 10),
+      positiveSignals: [...positiveWords].slice(0, 10),
+      negativeSignals: [...negativeWords].slice(0, 10),
     };
   }
 }

@@ -1,5 +1,7 @@
 import { type User, type InsertUser, type ApexPrediction, type HistoricalPerformance, type SportType } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { predictionEngine } from "./services/prediction-engine";
+import { historicalService } from "./services/historical-service";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -11,6 +13,8 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
+  private predictionCache: Map<SportType, { prediction: ApexPrediction; timestamp: number }> = new Map();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor() {
     this.users = new Map();
@@ -34,38 +38,44 @@ export class MemStorage implements IStorage {
   }
 
   async getApexPrediction(sport?: SportType): Promise<ApexPrediction> {
-    // Generate mock prediction data based on sport
-    const predictions = this.generateMockPredictions();
+    const targetSport = sport || 'Football';
     
-    if (sport) {
-      const filtered = predictions.find(p => p.sport === sport);
-      return filtered || predictions[0];
+    // Check cache first
+    const cached = this.predictionCache.get(targetSport);
+    const now = Date.now();
+    
+    if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
+      console.log(`✅ Returning cached prediction for ${targetSport}`);
+      return cached.prediction;
     }
-    
-    return predictions[0];
+
+    try {
+      console.log(`🚀 Generating LIVE prediction for ${targetSport}...`);
+      
+      // Generate real prediction using the full 6-phase system
+      const prediction = await predictionEngine.selectApexPick(targetSport);
+      
+      // Cache the prediction
+      this.predictionCache.set(targetSport, {
+        prediction,
+        timestamp: now,
+      });
+      
+      console.log(`✅ Live prediction generated and cached for ${targetSport}`);
+      return prediction;
+      
+    } catch (error) {
+      console.error('Error generating prediction, falling back to mock:', error);
+      // Fallback to mock data if prediction fails
+      const mockPredictions = this.generateMockPredictions();
+      const fallback = mockPredictions.find(p => p.sport === targetSport) || mockPredictions[0];
+      return fallback;
+    }
   }
 
   async getHistoricalPerformance(sport?: SportType): Promise<HistoricalPerformance[]> {
-    const data: HistoricalPerformance[] = [];
-    const sports: SportType[] = sport ? [sport] : ['Football', 'Basketball', 'Tennis', 'Hockey'];
-    
-    // Generate 10 days of historical data
-    for (let i = 9; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      
-      for (const s of sports) {
-        data.push({
-          date: date.toISOString().split('T')[0],
-          sport: s,
-          accuracy: 70 + Math.random() * 25, // 70-95% accuracy
-          roi: 5 + Math.random() * 20, // 5-25% ROI
-          confidenceScore: 75 + Math.random() * 20, // 75-95 confidence
-        });
-      }
-    }
-    
-    return data;
+    // Use the historical service for performance data
+    return historicalService.getPerformance(sport);
   }
 
   private generateMockPredictions(): ApexPrediction[] {

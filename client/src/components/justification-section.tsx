@@ -105,10 +105,10 @@ export function JustificationSection({ justification }: JustificationSectionProp
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold">{feature.feature}</span>
                     <span className="text-sm font-mono text-muted-foreground">
-                      Weight: {(feature.weight * 100).toFixed(0)}%
+                      Weight: {feature.weight.toFixed(0)}%
                     </span>
                   </div>
-                  <Progress value={feature.weight * 100} className="h-2" />
+                  <Progress value={feature.weight} className="h-2" />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
                     <div className="text-xs">
                       <span className="font-medium text-muted-foreground">Impact: </span>

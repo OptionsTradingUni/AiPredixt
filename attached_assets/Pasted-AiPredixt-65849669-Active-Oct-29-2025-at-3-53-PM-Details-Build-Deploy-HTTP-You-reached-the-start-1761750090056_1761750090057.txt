@@ -1,0 +1,151 @@
+AiPredixt
+/
+65849669
+
+Active
+Oct 29, 2025 at 3:53 PM
+Details Build Deploy HTTP
+You reached the start of the range
+Oct 29, 2025 at 3:53 PM
+Starting Container
+2:57:59 PM [express] serving on port 8080
+🔥 Starting cache warmup service...
+✅ Cache warmup service started (runs every 4 minutes)
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+  schema: undefined,
+🔥 Starting cache warmup...
+🔄 Warming up Football predictions...
+🔄 Warming up Basketball predictions...
+🔄 Warming up Hockey predictions...
+🔄 Warming up Tennis predictions...
+❌ Failed to warm up Tennis cache: error: relation "predictions" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4322:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4262:20)
+    at async file:///app/dist/index.js:4758:13
+    at async Promise.allSettled (index 3)
+    at async CacheWarmupService.warmupCache (file:///app/dist/index.js:4754:7) {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '174',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+❌ Failed to warm up Football cache: error: relation "predictions" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4322:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4262:20)
+    at async file:///app/dist/index.js:4758:13
+    at async Promise.allSettled (index 0)
+    at async CacheWarmupService.warmupCache (file:///app/dist/index.js:4754:7) {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '174',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+❌ Failed to warm up Basketball cache: error: relation "predictions" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4322:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4262:20)
+    at async file:///app/dist/index.js:4758:13
+    at async Promise.allSettled (index 1)
+    at async CacheWarmupService.warmupCache (file:///app/dist/index.js:4754:7) {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '174',
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+❌ Failed to warm up Hockey cache: error: relation "predictions" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async DatabaseStorage.getCachedPrediction (file:///app/dist/index.js:4322:22)
+    at async DatabaseStorage.getApexPrediction (file:///app/dist/index.js:4262:20)
+    at async file:///app/dist/index.js:4758:13
+    at async Promise.allSettled (index 2)
+    at async CacheWarmupService.warmupCache (file:///app/dist/index.js:4754:7) {
+  length: 111,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  where: undefined,
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+  schema: undefined,
+  code: '42P01',
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+Add free weather information
+Cache warmup completed successfully
+
+Get real news feelings
+
+
+In my database on railway no table is created yet 
+postgresql://postgres:WtMiGuftPVikvARoNdCtujyFFrDwZziJ@postgres-lqot.railway.internal:5432/railway
+
+postgresql://postgres:WtMiGuftPVikvARoNdCtujyFFrDwZziJ@trolley.proxy.rlwy.net:12958/railway
+
+
+
+Save data permanently
+
+
+Remove fake data
+
+
+Scrape real sports information
+
+
+Scrape real social m
+& Scroll to latest
+
+Check all features work
+
+
+Review data for quality

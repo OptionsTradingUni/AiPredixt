@@ -1,8 +1,14 @@
 import { ApexPrediction } from '@shared/schema';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, TrendingUp, Target, Activity } from 'lucide-react';
+import { Clock, TrendingUp, Target, Activity, HelpCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface ApexPickCardProps {
   prediction: ApexPrediction;
@@ -79,6 +85,17 @@ export function ApexPickCard({ prediction }: ApexPickCardProps) {
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Edge (EV%)
             </span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold mb-1">What is Edge/EV?</p>
+                  <p className="text-sm">Edge (Expected Value) is your profit advantage. If our calculated probability is 58% but bookmaker odds imply 55%, you have a +3% edge. Over many bets, this translates to consistent profit. Positive edge = good bet, negative edge = bad bet.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <div className="flex items-baseline gap-1">
             <span className="text-4xl font-bold font-mono text-chart-3" data-testid="text-edge">

@@ -172,6 +172,60 @@ export interface HistoricalPerformance {
 
 export type SelectApexPrediction = ApexPrediction;
 
+// Database Tables for Persistence
+
+export const predictions = pgTable("predictions", {
+  id: varchar("id").primaryKey(),
+  sport: text("sport").notNull(),
+  match: text("match").notNull(),
+  homeTeam: text("home_team").notNull(),
+  awayTeam: text("away_team").notNull(),
+  league: text("league").notNull(),
+  betType: text("bet_type").notNull(),
+  bestOdds: decimal("best_odds", { precision: 10, scale: 2 }).notNull(),
+  bookmaker: text("bookmaker").notNull(),
+  edge: decimal("edge", { precision: 10, scale: 2 }).notNull(),
+  confidenceScore: integer("confidence_score").notNull(),
+  data: jsonb("data").notNull(), // Full ApexPrediction object
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export const games = pgTable("games", {
+  id: varchar("id").primaryKey(),
+  sport: text("sport").notNull(),
+  league: text("league").notNull(),
+  date: text("date").notNull(),
+  time: text("time").notNull(),
+  homeTeam: text("home_team").notNull(),
+  awayTeam: text("away_team").notNull(),
+  status: text("status").notNull(),
+  data: jsonb("data").notNull(), // Full Game object
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const scrapedData = pgTable("scraped_data", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sport: text("sport").notNull(),
+  source: text("source").notNull(),
+  data: jsonb("data").notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export const insertPredictionSchema = createInsertSchema(predictions);
+export const insertGameSchema = createInsertSchema(games);
+export const insertScrapedDataSchema = createInsertSchema(scrapedData);
+
+export type InsertPrediction = z.infer<typeof insertPredictionSchema>;
+export type InsertGame = z.infer<typeof insertGameSchema>;
+export type InsertScrapedData = z.infer<typeof insertScrapedDataSchema>;
+
+export type SelectPrediction = typeof predictions.$inferSelect;
+export type SelectGame = typeof games.$inferSelect;
+export type SelectScrapedData = typeof scrapedData.$inferSelect;
+
 // Game Listing Types
 export interface Game {
   id: string;

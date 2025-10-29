@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { cacheWarmupService } from "./services/cache-warmup";
 
 const app = express();
 
@@ -77,5 +78,12 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Start cache warmup service in background (non-blocking)
+    if (process.env.NODE_ENV === 'production') {
+      cacheWarmupService.start().catch(err => {
+        console.error('❌ Cache warmup service failed to start:', err);
+      });
+    }
   });
 })();

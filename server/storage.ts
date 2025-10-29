@@ -1,8 +1,10 @@
-import { type User, type InsertUser, type ApexPrediction, type HistoricalPerformance, type SportType, type Game, type GamesListResponse } from "@shared/schema";
+import { type User, type InsertUser, type ApexPrediction, type HistoricalPerformance, type SportType, type Game, type GamesListResponse, users, predictions, games, scrapedData } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { predictionEngine } from "./services/prediction-engine";
 import { historicalService } from "./services/historical-service";
 import { enhancedOddsService } from "./services/enhanced-odds-service";
+import { db } from "./db";
+import { eq, and, gte, sql as drizzleSql } from "drizzle-orm";
 
 export interface DataSourceStatus {
   isRealData: boolean;
@@ -370,4 +372,382 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  private lastScrapingTelemetry: {
+    sources: string[];
+    totalGames: number;
+    timestamp: number;
+    apis: { oddsApi: boolean; sportsApi: boolean };
+  } | null = null;
+
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const id = randomUUID();
+    const [user] = await db
+      .insert(users)
+      .values({ ...insertUser, id })
+      .returning();
+    return user;
+  }
+
+  public updateScrapingTelemetry(sources: string[], totalGames: number, apis: { oddsApi: boolean; sportsApi: boolean }) {
+    this.lastScrapingTelemetry = {
+      sources,
+      totalGames,
+      timestamp: Date.now(),
+      apis,
+    };
+  }
+
+  async getApexPrediction(sport?: SportType, dateFilter?: string): Promise<ApexPrediction> {
+    const targetSport = sport || 'Football';
+    
+    // Try to get from database cache first
+    const cached = await this.getCachedPrediction(targetSport, dateFilter);
+    if (cached) {
+      console.log(`✅ Returning cached prediction for ${targetSport}${dateFilter ? ` (${dateFilter})` : ''} from database`);
+      return cached;
+    }
+
+    // Generate new prediction
+    try {
+      console.log(`🚀 Generating prediction for ${targetSport} using 6-phase system${dateFilter ? ` (date: ${dateFilter})` : ''}...`);
+      
+      const { prediction, telemetry } = await predictionEngine.selectApexPick(targetSport, dateFilter);
+      
+      if (telemetry) {
+        this.updateScrapingTelemetry(telemetry.sources, telemetry.totalGames, telemetry.apis);
+      }
+      
+      // Cache in database (expires in 5 minutes)
+      await this.cachePrediction(prediction, 5);
+      
+      console.log(`✅ Prediction generated and cached for ${targetSport}`);
+      return prediction;
+      
+    } catch (error) {
+      console.error('❌ Prediction generation failed:', error);
+      throw error;
+    }
+  }
+
+  async getAllPredictions(sport?: SportType, dateFilter?: string): Promise<ApexPrediction[]> {
+    const targetSport = sport || 'Football';
+    
+    // For now, return just the apex pick as an array
+    // In the future, we can implement full multi-game analysis
+    const apexPick = await this.getApexPrediction(targetSport, dateFilter);
+    return [apexPick];
+  }
+
+  async getHistoricalPerformance(sport?: SportType): Promise<HistoricalPerformance[]> {
+    return historicalService.getPerformance(sport);
+  }
+
+  async getDataSourceStatus(): Promise<DataSourceStatus> {
+    if (this.lastScrapingTelemetry && (Date.now() - this.lastScrapingTelemetry.timestamp) < 300000) {
+      return {
+        isRealData: this.lastScrapingTelemetry.totalGames > 0,
+        apis: this.lastScrapingTelemetry.apis,
+        scrapingSources: this.lastScrapingTelemetry.sources,
+        totalSources: this.lastScrapingTelemetry.sources.length + 
+          (this.lastScrapingTelemetry.apis.oddsApi ? 1 : 0) + 
+          (this.lastScrapingTelemetry.apis.sportsApi ? 1 : 0),
+      };
+    }
+    
+    const oddsApiConfigured = !!process.env.ODDS_API_KEY;
+    const sportsApiConfigured = !!process.env.API_FOOTBALL_KEY;
+    
+    return {
+      isRealData: true,
+      apis: {
+        oddsApi: oddsApiConfigured,
+        sportsApi: sportsApiConfigured,
+      },
+      scrapingSources: ['Oddsportal', 'BetExplorer', 'Flashscore', 'ESPN', 'Free Sources'],
+      totalSources: 5 + (oddsApiConfigured ? 1 : 0) + (sportsApiConfigured ? 1 : 0),
+    };
+  }
+
+  async getGames(filters: {
+    sport?: SportType;
+    date?: 'today' | 'tomorrow' | 'upcoming' | 'past' | string;
+    status?: 'upcoming' | 'live' | 'finished';
+    league?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<GamesListResponse> {
+    // Check database cache first
+    const cachedGames = await this.getCachedGames();
+    
+    if (cachedGames.length > 0) {
+      return this.filterAndPaginateGames(cachedGames, filters);
+    }
+    
+    // Generate games from scraping
+    const scrapedGames = await this.getGamesFromScrapedData();
+    
+    // Cache games in database (expires in 5 minutes)
+    await this.cacheGames(scrapedGames);
+    
+    return this.filterAndPaginateGames(scrapedGames, filters);
+  }
+
+  private async getCachedPrediction(sport: SportType, dateFilter?: string): Promise<ApexPrediction | null> {
+    const now = new Date();
+    const [cached] = await db
+      .select()
+      .from(predictions)
+      .where(
+        and(
+          eq(predictions.sport, sport),
+          gte(predictions.expiresAt, now)
+        )
+      )
+      .limit(1);
+    
+    if (cached) {
+      return cached.data as ApexPrediction;
+    }
+    return null;
+  }
+
+  private async cachePrediction(prediction: ApexPrediction, expiryMinutes: number): Promise<void> {
+    const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
+    
+    await db
+      .insert(predictions)
+      .values({
+        id: prediction.id,
+        sport: prediction.sport,
+        match: prediction.match,
+        homeTeam: prediction.teams.home,
+        awayTeam: prediction.teams.away,
+        league: prediction.league,
+        betType: prediction.betType,
+        bestOdds: prediction.bestOdds.toString(),
+        bookmaker: prediction.bookmaker,
+        edge: prediction.edge.toString(),
+        confidenceScore: prediction.confidenceScore,
+        data: prediction as any,
+        expiresAt,
+      })
+      .onConflictDoUpdate({
+        target: predictions.id,
+        set: {
+          data: prediction as any,
+          expiresAt,
+        },
+      });
+  }
+
+  private async getCachedGames(): Promise<Game[]> {
+    const now = new Date();
+    const cached = await db
+      .select()
+      .from(games)
+      .where(gte(games.updatedAt, new Date(Date.now() - 5 * 60 * 1000)));
+    
+    return cached.map(g => g.data as Game);
+  }
+
+  private async cacheGames(gamesList: Game[]): Promise<void> {
+    if (gamesList.length === 0) return;
+    
+    // Delete old games
+    await db.delete(games);
+    
+    // Insert new games
+    await db.insert(games).values(
+      gamesList.map(game => ({
+        id: game.id,
+        sport: game.sport,
+        league: game.league,
+        date: game.date,
+        time: game.time,
+        homeTeam: game.teams.home,
+        awayTeam: game.teams.away,
+        status: game.status,
+        data: game as any,
+      }))
+    );
+  }
+
+  private async getGamesFromScrapedData(): Promise<Game[]> {
+    const gamesList: Game[] = [];
+    
+    const sports = ['soccer', 'basketball', 'icehockey', 'tennis'] as const;
+    
+    try {
+      const allOddsData = await Promise.all(
+        sports.map(async (sport) => {
+          try {
+            const oddsData = await enhancedOddsService.getOdds(sport);
+            return { sport, oddsData };
+          } catch (error) {
+            console.error(`Failed to fetch ${sport} odds:`, error);
+            return { sport, oddsData: [] };
+          }
+        })
+      );
+      
+      const firstWithData = allOddsData.find(({ oddsData }) => oddsData.length > 0);
+      if (firstWithData && firstWithData.oddsData.length > 0) {
+        const sources = Array.from(new Set(firstWithData.oddsData.flatMap(g => g.sources)));
+        const totalGames = allOddsData.reduce((sum, { oddsData }) => sum + oddsData.length, 0);
+        this.updateScrapingTelemetry(sources, totalGames, {
+          oddsApi: !!process.env.ODDS_API_KEY,
+          sportsApi: !!process.env.API_FOOTBALL_KEY,
+        });
+      }
+      
+      for (const { sport, oddsData } of allOddsData) {
+        for (const odds of oddsData) {
+          const gameDate = new Date(odds.gameTime);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const gameStartOfDay = new Date(gameDate);
+          gameStartOfDay.setHours(0, 0, 0, 0);
+          
+          let status: 'upcoming' | 'live' | 'finished' = 'upcoming';
+          if (gameStartOfDay < today) {
+            status = 'finished';
+          } else if (gameStartOfDay.getTime() === today.getTime()) {
+            const now = new Date();
+            if (gameDate < now) {
+              const hoursSince = (now.getTime() - gameDate.getTime()) / (1000 * 60 * 60);
+              status = hoursSince < 3 ? 'live' : 'finished';
+            }
+          }
+          
+          const sportMap: Record<string, SportType> = {
+            soccer: 'Football',
+            basketball: 'Basketball',
+            icehockey: 'Hockey',
+            tennis: 'Tennis',
+          };
+          
+          gamesList.push({
+            id: odds.gameId,
+            sport: sportMap[sport] || 'Football',
+            league: odds.league,
+            date: gameDate.toISOString().split('T')[0],
+            time: `${gameDate.getHours().toString().padStart(2, '0')}:${gameDate.getMinutes().toString().padStart(2, '0')}`,
+            teams: {
+              home: odds.homeTeam,
+              away: odds.awayTeam,
+            },
+            status,
+            odds: {
+              home: odds.odds.moneyline?.home || 2.0,
+              draw: odds.odds.moneyline?.draw,
+              away: odds.odds.moneyline?.away || 2.0,
+            },
+            predictionAvailable: false,
+            confidence: undefined,
+            bestBet: undefined,
+          });
+        }
+      }
+      
+      console.log(`✅ Loaded ${gamesList.length} real games from scraped odds data`);
+      return gamesList;
+      
+    } catch (error) {
+      console.error('❌ Failed to fetch games from odds data:', error);
+      return [];
+    }
+  }
+
+  private filterAndPaginateGames(allGames: Game[], filters: {
+    sport?: SportType;
+    date?: 'today' | 'tomorrow' | 'upcoming' | 'past' | string;
+    status?: 'upcoming' | 'live' | 'finished';
+    league?: string;
+    limit?: number;
+    offset?: number;
+  }): GamesListResponse {
+    const { sport, date, status, league, limit = 100, offset = 0 } = filters;
+    
+    let filteredGames = allGames;
+    
+    if (sport) {
+      filteredGames = filteredGames.filter(g => g.sport === sport);
+    }
+    
+    if (league) {
+      filteredGames = filteredGames.filter(g => g.league === league);
+    }
+    
+    if (status) {
+      filteredGames = filteredGames.filter(g => g.status === status);
+    }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfterTomorrow = new Date(today);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+    
+    if (date) {
+      if (date === 'today') {
+        filteredGames = filteredGames.filter(g => {
+          const gameDate = new Date(g.date);
+          gameDate.setHours(0, 0, 0, 0);
+          return gameDate.getTime() === today.getTime();
+        });
+      } else if (date === 'tomorrow') {
+        filteredGames = filteredGames.filter(g => {
+          const gameDate = new Date(g.date);
+          gameDate.setHours(0, 0, 0, 0);
+          return gameDate.getTime() === tomorrow.getTime();
+        });
+      } else if (date === 'upcoming') {
+        filteredGames = filteredGames.filter(g => {
+          const gameDate = new Date(g.date);
+          return gameDate >= today;
+        });
+      } else if (date === 'past') {
+        filteredGames = filteredGames.filter(g => {
+          const gameDate = new Date(g.date);
+          return gameDate < today;
+        });
+      } else {
+        filteredGames = filteredGames.filter(g => g.date === date);
+      }
+    }
+    
+    filteredGames.sort((a, b) => {
+      const dateA = new Date(`${a.date}T${a.time}`);
+      const dateB = new Date(`${b.date}T${b.time}`);
+      return dateA.getTime() - dateB.getTime();
+    });
+    
+    const total = allGames.length;
+    const filteredCount = filteredGames.length;
+    const paginatedGames = filteredGames.slice(offset, offset + limit);
+    
+    return {
+      games: paginatedGames,
+      total,
+      filteredCount,
+      dateRange: {
+        from: filteredGames[0]?.date || today.toISOString().split('T')[0],
+        to: filteredGames[filteredGames.length - 1]?.date || dayAfterTomorrow.toISOString().split('T')[0],
+      },
+    };
+  }
+}
+
+export const storage = new DatabaseStorage();

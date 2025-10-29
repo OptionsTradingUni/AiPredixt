@@ -86,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dateFilter = req.query.date as string | undefined;
       const statusFilter = req.query.status as 'upcoming' | 'live' | 'finished' | undefined;
       const leagueFilter = req.query.league as string | undefined;
-      const limitParam = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const limitParam = req.query.limit ? parseInt(req.query.limit as string) : 1000;
       const offsetParam = req.query.offset ? parseInt(req.query.offset as string) : 0;
       
       let sport: SportType | undefined = undefined;
@@ -107,6 +107,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching games:', error);
       res.status(500).json({ error: 'Failed to fetch games' });
+    }
+  });
+
+  // Get ALL games grouped by league (new endpoint for better organization)
+  app.get("/api/games/grouped", async (req, res) => {
+    try {
+      const sportQuery = req.query.sport as string | undefined;
+      const dateFilter = req.query.date as string | undefined;
+      
+      let sport: SportType | undefined = undefined;
+      if (sportQuery && sportQuery !== 'All') {
+        sport = sportQuery as SportType;
+      }
+
+      const gamesResponse = await storage.getGames({
+        sport,
+        date: dateFilter,
+        limit: 1000,
+        offset: 0,
+      });
+
+      // Group games by league
+      const groupedByLeague = gamesResponse.games.reduce((acc, game) => {
+        if (!acc[game.league]) {
+          acc[game.league] = [];
+        }
+        acc[game.league].push(game);
+        return acc;
+      }, {} as Record<string, typeof gamesResponse.games>);
+
+      // Convert to array and sort by number of games
+      const leaguesArray = Object.entries(groupedByLeague).map(([league, games]) => ({
+        league,
+        sport: games[0]?.sport || 'Football',
+        games: games.sort((a, b) => {
+          const dateA = new Date(`${a.date}T${a.time}`);
+          const dateB = new Date(`${b.date}T${b.time}`);
+          return dateA.getTime() - dateB.getTime();
+        }),
+        gameCount: games.length,
+      }));
+
+      // Sort leagues by game count (most games first)
+      leaguesArray.sort((a, b) => b.gameCount - a.gameCount);
+
+      res.json({
+        leagues: leaguesArray,
+        totalGames: gamesResponse.total,
+        filteredGames: gamesResponse.filteredCount,
+        dateRange: gamesResponse.dateRange,
+      });
+    } catch (error) {
+      console.error('Error fetching grouped games:', error);
+      res.status(500).json({ error: 'Failed to fetch grouped games' });
     }
   });
 

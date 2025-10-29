@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { SportType, ApexPrediction } from '@shared/schema';
+import { SportType, ApexPrediction, GroupedGamesResponse } from '@shared/schema';
 import { SportFilter } from '@/components/sport-filter';
 import { ApexPickCard } from '@/components/apex-pick-card';
 import { MetricsGrid } from '@/components/metrics-grid';
@@ -12,8 +12,8 @@ import { HistoricalPerformanceChart } from '@/components/historical-performance-
 import { ConfigStatusBanner } from '@/components/config-status-banner';
 import { AllMarketsPanel } from '@/components/all-markets-panel';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { LeagueGroupedGames } from '@/components/league-grouped-games';
-import { RefreshCw, List, Calendar, Clock, TrendingUp } from 'lucide-react';
+import { AllGamesList } from '@/components/all-games-list';
+import { RefreshCw, List, Calendar, Clock, TrendingUp, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'wouter';
@@ -49,23 +49,23 @@ export default function Dashboard() {
     },
   });
 
-  const { data: allPredictions, isLoading: allLoading, refetch: refetchAll } = useQuery<ApexPrediction[]>({
-    queryKey: ['/api/all-predictions', selectedSport, selectedDate],
+  const { data: groupedGames, isLoading: gamesLoading, refetch: refetchGames } = useQuery<GroupedGamesResponse>({
+    queryKey: ['/api/games/grouped', selectedSport, selectedDate],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (selectedSport !== 'All') params.set('sport', selectedSport);
       params.set('date', selectedDate);
       const queryString = params.toString();
-      const response = await fetch(`/api/all-predictions${queryString ? `?${queryString}` : ''}`);
-      if (!response.ok) throw new Error('Failed to fetch predictions');
+      const response = await fetch(`/api/games/grouped${queryString ? `?${queryString}` : ''}`);
+      if (!response.ok) throw new Error('Failed to fetch games');
       return response.json();
     },
   });
 
-  const isLoading = apexLoading || allLoading;
+  const isLoading = apexLoading || gamesLoading;
   const refetch = () => {
     refetchApex();
-    refetchAll();
+    refetchGames();
   };
 
   return (
@@ -165,49 +165,67 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-        ) : apexPrediction ? (
+        ) : (
           <div className="space-y-8">
-            {/* Apex Pick Hero Card */}
-            <ApexPickCard prediction={apexPrediction} />
-
-            {/* All Games Grouped by League */}
-            {allPredictions && allPredictions.length > 0 && (
-              <LeagueGroupedGames predictions={allPredictions} />
+            {/* Apex Pick Hero Card (if available) */}
+            {apexPrediction && (
+              <ApexPickCard prediction={apexPrediction} />
             )}
 
-            {/* Main Grid Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {/* Left Column - Primary Content */}
-              <div className="lg:col-span-8 space-y-8">
-                {/* Metrics Grid */}
-                <MetricsGrid prediction={apexPrediction} />
-
-                {/* All Betting Markets */}
-                {apexPrediction.markets && apexPrediction.markets.length > 0 && (
-                  <AllMarketsPanel markets={apexPrediction.markets} />
-                )}
-
-                {/* Risk Assessment */}
-                <RiskAssessmentPanel riskAssessment={apexPrediction.riskAssessment} />
-
-                {/* Justification */}
-                <JustificationSection justification={apexPrediction.justification} />
-
-                {/* Market Analysis */}
-                <MarketAnalysisTable prediction={apexPrediction} />
+            {/* All Games Grouped by League */}
+            {groupedGames && groupedGames.leagues.length > 0 ? (
+              <AllGamesList groupedGames={groupedGames} />
+            ) : gamesLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading games...</p>
               </div>
-
-              {/* Right Column - Sidebar */}
-              <div className="lg:col-span-4 space-y-8">
-                {/* Contingency Pick */}
-                <ContingencyPickCard contingency={apexPrediction.contingencyPick} />
-
-                {/* Historical Performance */}
-                <HistoricalPerformanceChart sport={selectedSport === 'All' ? undefined : selectedSport} />
+            ) : (
+              <div className="text-center py-12">
+                <Trophy className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Games Available</h3>
+                <p className="text-muted-foreground">
+                  No games found for the selected filters. Try changing your sport or date selection.
+                </p>
               </div>
-            </div>
+            )}
+
+            {/* Apex Pick Details (if available) */}
+            {apexPrediction && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
+                {/* Left Column - Primary Content */}
+                <div className="lg:col-span-8 space-y-8">
+                  {/* Metrics Grid */}
+                  <MetricsGrid prediction={apexPrediction} />
+
+                  {/* All Betting Markets */}
+                  {apexPrediction.markets && apexPrediction.markets.length > 0 && (
+                    <AllMarketsPanel markets={apexPrediction.markets} />
+                  )}
+
+                  {/* Risk Assessment */}
+                  <RiskAssessmentPanel riskAssessment={apexPrediction.riskAssessment} />
+
+                  {/* Justification */}
+                  <JustificationSection justification={apexPrediction.justification} />
+
+                  {/* Market Analysis */}
+                  <MarketAnalysisTable prediction={apexPrediction} />
+                </div>
+
+                {/* Right Column - Sidebar */}
+                <div className="lg:col-span-4 space-y-8">
+                  {/* Contingency Pick */}
+                  <ContingencyPickCard contingency={apexPrediction.contingencyPick} />
+
+                  {/* Historical Performance */}
+                  <HistoricalPerformanceChart sport={selectedSport === 'All' ? undefined : selectedSport} />
+                </div>
+              </div>
+            )}
           </div>
-        ) : (
+        )}
+        {!apexPrediction && !groupedGames && (
           <div className="flex items-center justify-center min-h-96">
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">

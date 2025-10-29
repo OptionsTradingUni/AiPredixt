@@ -288,3 +288,20 @@ export interface GamesListResponse {
     to: string;
   };
 }
+
+export interface LeagueGroup {
+  league: string;
+  sport: SportType;
+  games: Game[];
+  gameCount: number;
+}
+
+export interface GroupedGamesResponse {
+  leagues: LeagueGroup[];
+  totalGames: number;
+  filteredGames: number;
+  dateRange: {
+    from: string;
+    to: string;
+  };
+}

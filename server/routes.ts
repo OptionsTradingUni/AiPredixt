@@ -7,10 +7,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get apex prediction
   app.get("/api/apex-prediction", async (req, res) => {
     try {
-      let sport = req.query.sport as SportType | undefined;
+      const sportQuery = req.query.sport as string | undefined;
       // Handle 'All' as undefined to get default prediction
-      if (sport === 'All') {
-        sport = undefined;
+      let sport: SportType | undefined = undefined;
+      if (sportQuery && sportQuery !== 'All') {
+        sport = sportQuery as SportType;
       }
       const prediction = await storage.getApexPrediction(sport);
       res.json(prediction);
@@ -23,10 +24,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get historical performance data
   app.get("/api/historical-performance", async (req, res) => {
     try {
-      let sport = req.query.sport as SportType | undefined;
+      const sportQuery = req.query.sport as string | undefined;
       // Handle 'All' as undefined
-      if (sport === 'All') {
-        sport = undefined;
+      let sport: SportType | undefined = undefined;
+      if (sportQuery && sportQuery !== 'All') {
+        sport = sportQuery as SportType;
       }
       const performance = await storage.getHistoricalPerformance(sport);
       res.json(performance);

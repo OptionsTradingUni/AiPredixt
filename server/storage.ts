@@ -37,7 +37,7 @@ export class MemStorage implements IStorage {
     // Generate mock prediction data based on sport
     const predictions = this.generateMockPredictions();
     
-    if (sport && sport !== 'All') {
+    if (sport) {
       const filtered = predictions.find(p => p.sport === sport);
       return filtered || predictions[0];
     }
@@ -47,7 +47,7 @@ export class MemStorage implements IStorage {
 
   async getHistoricalPerformance(sport?: SportType): Promise<HistoricalPerformance[]> {
     const data: HistoricalPerformance[] = [];
-    const sports: SportType[] = sport && sport !== 'All' ? [sport] : ['Football', 'Basketball', 'Tennis', 'Hockey'];
+    const sports: SportType[] = sport ? [sport] : ['Football', 'Basketball', 'Tennis', 'Hockey'];
     
     // Generate 10 days of historical data
     for (let i = 9; i >= 0; i--) {

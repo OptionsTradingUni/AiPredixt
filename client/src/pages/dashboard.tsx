@@ -11,6 +11,7 @@ import { ContingencyPickCard } from '@/components/contingency-pick-card';
 import { HistoricalPerformanceChart } from '@/components/historical-performance-chart';
 import { ConfigStatusBanner } from '@/components/config-status-banner';
 import { AllMarketsPanel } from '@/components/all-markets-panel';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { RefreshCw, List, Calendar, Clock, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -63,6 +64,7 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <Link href="/all-games">
                 <Button
                   size="sm"

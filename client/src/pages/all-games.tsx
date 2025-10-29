@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SportType, ApexPrediction } from '@shared/schema';
 import { SportFilter } from '@/components/sport-filter';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { RefreshCw, TrendingUp, AlertTriangle, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,6 +39,7 @@ export default function AllGamesPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <Link href="/">
                 <Button variant="ghost" size="sm" data-testid="link-dashboard">
                   Dashboard

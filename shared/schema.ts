@@ -46,6 +46,16 @@ export interface ExplainabilityFeature {
   causalLink: string;
 }
 
+export interface NewsItem {
+  headline: string;
+  source: string;
+  timestamp: string;
+  sentiment: 'positive' | 'negative' | 'neutral';
+  summary: string;
+  relevance: 'high' | 'medium' | 'low';
+  category: 'injury' | 'form' | 'transfer' | 'tactical' | 'general';
+}
+
 export interface Justification {
   summary: string;
   deepDive: string[];
@@ -54,6 +64,11 @@ export interface Justification {
   refutation?: string;
   explainabilityScore: number;
   keyFeatures: ExplainabilityFeature[];
+  detailedNews?: {
+    homeTeam: NewsItem[];
+    awayTeam: NewsItem[];
+    general: NewsItem[];
+  };
 }
 
 export interface ContingencyPick {
@@ -85,6 +100,16 @@ export interface BettingMarket {
   dataSources: string[]; // e.g., ["TheSportsDB", "FBref", "Sofascore"]
 }
 
+export interface LeagueInfo {
+  name: string;
+  displayName: string;
+  country: string;
+  region: string;
+  tier: string;
+  type: 'League' | 'Cup' | 'Tournament' | 'International';
+  popularity: 'High' | 'Medium' | 'Low';
+}
+
 export interface ApexPrediction {
   id: string;
   sport: SportType;
@@ -94,6 +119,7 @@ export interface ApexPrediction {
     away: string;
   };
   league: string;
+  leagueInfo?: LeagueInfo;
   
   // Legacy fields for backward compatibility
   betType: string;

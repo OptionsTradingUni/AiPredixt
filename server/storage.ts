@@ -32,6 +32,7 @@ export interface IStorage {
     limit?: number;
     offset?: number;
   }): Promise<GamesListResponse>;
+  getMatchDetail(gameId: string): Promise<import('@shared/schema').MatchDetail | null>;
 }
 
 // MemStorage is available for fallback if database issues occur
@@ -325,6 +326,22 @@ export class MemStorage implements IStorage {
     };
   }
 
+  async getMatchDetail(gameId: string): Promise<import('@shared/schema').MatchDetail | null> {
+    const allGames = await this.getGamesFromScrapedData();
+    const game = allGames.find(g => g.id === gameId);
+    
+    if (!game) {
+      return null;
+    }
+    
+    // Return game with enriched data structure (placeholder for now)
+    return {
+      ...game,
+      venue: 'TBD',
+      referee: 'TBD',
+    };
+  }
+
   private async getGamesFromScrapedData(): Promise<Game[]> {
     const games: Game[] = [];
     
@@ -547,6 +564,22 @@ export class DatabaseStorage implements IStorage {
     await this.cacheGames(scrapedGames);
     
     return this.filterAndPaginateGames(scrapedGames, filters);
+  }
+
+  async getMatchDetail(gameId: string): Promise<import('@shared/schema').MatchDetail | null> {
+    const allGames = await this.getGamesFromScrapedData();
+    const game = allGames.find(g => g.id === gameId);
+    
+    if (!game) {
+      return null;
+    }
+    
+    // Return game with enriched data structure (placeholder for now)
+    return {
+      ...game,
+      venue: 'TBD',
+      referee: 'TBD',
+    };
   }
 
   private async getCachedPrediction(sport: SportType, dateFilter?: string): Promise<ApexPrediction | null> {

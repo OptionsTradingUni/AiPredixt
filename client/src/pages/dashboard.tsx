@@ -16,7 +16,7 @@ import { AllGamesList } from '@/components/all-games-list';
 import { RefreshCw, List, Calendar, Clock, TrendingUp, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 
 interface DataSourceStatus {
   isRealData: boolean;
@@ -29,6 +29,7 @@ interface DataSourceStatus {
 }
 
 export default function Dashboard() {
+  const [, navigate] = useLocation();
   const [selectedSport, setSelectedSport] = useState<SportType | 'All'>('All');
   const [selectedDate, setSelectedDate] = useState<'today' | 'tomorrow' | 'upcoming' | 'past'>('today');
 
@@ -72,173 +73,146 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-7xl mx-auto px-6 md:px-8 lg:px-12">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary text-primary-foreground">
-                <span className="font-mono font-bold text-lg">Δ</span>
+        <div className="w-full px-4 md:px-6">
+          <div className="flex items-center justify-between h-14 md:h-16">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-md bg-primary text-primary-foreground">
+                <span className="font-mono font-bold text-base md:text-lg">Δ</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold tracking-tight">Apex AI</h1>
-                <p className="text-xs text-muted-foreground">Prediction Engine</p>
+                <h1 className="text-lg md:text-xl font-bold tracking-tight">Apex AI</h1>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Prediction Engine</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2">
               <ThemeToggle />
-              <Link href="/all-games">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  data-testid="link-all-games"
-                  className="gap-2"
-                >
-                  <List className="h-4 w-4" />
-                  <span className="hidden sm:inline">All Games</span>
-                </Button>
-              </Link>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => refetch()}
                 data-testid="button-refresh"
-                className="gap-2"
+                className="gap-1 md:gap-2"
               >
-                <RefreshCw className="h-4 w-4" />
-                <span className="hidden sm:inline">Refresh</span>
+                <RefreshCw className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline text-xs md:text-sm">Refresh</span>
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Sport Filters */}
-      <div className="border-b border-border bg-card">
-        <div className="max-w-7xl mx-auto px-6 md:px-8 lg:px-12 py-6 space-y-6">
-          <SportFilter
-            selectedSport={selectedSport}
-            onSelectSport={setSelectedSport}
-          />
-          
-          {/* Date Filter */}
-          <Tabs value={selectedDate} onValueChange={(value) => setSelectedDate(value as typeof selectedDate)} data-testid="filter-date">
-            <TabsList className="grid w-full max-w-2xl grid-cols-4">
-              <TabsTrigger value="today" data-testid="button-date-today">
-                <Calendar className="mr-2 h-4 w-4" />
-                Today
-              </TabsTrigger>
-              <TabsTrigger value="tomorrow" data-testid="button-date-tomorrow">
-                <Clock className="mr-2 h-4 w-4" />
-                Tomorrow
-              </TabsTrigger>
-              <TabsTrigger value="upcoming" data-testid="button-date-upcoming">
-                <TrendingUp className="mr-2 h-4 w-4" />
-                Upcoming
-              </TabsTrigger>
-              <TabsTrigger value="past" data-testid="button-date-past">
-                <List className="mr-2 h-4 w-4" />
-                Past Results
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+      {/* Filters - Compact Mobile Design */}
+      <div className="border-b border-border bg-card/50">
+        <div className="w-full px-4 md:px-6 py-3 md:py-4">
+          <div className="space-y-3">
+            <SportFilter
+              selectedSport={selectedSport}
+              onSelectSport={setSelectedSport}
+            />
+            
+            {/* Date Filter - Horizontal Scroll on Mobile */}
+            <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+              <Tabs value={selectedDate} onValueChange={(value) => setSelectedDate(value as typeof selectedDate)} data-testid="filter-date">
+                <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:max-w-2xl md:grid-cols-4">
+                  <TabsTrigger value="today" data-testid="button-date-today" className="flex-shrink-0">
+                    <Calendar className="mr-1.5 md:mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
+                    <span className="text-xs md:text-sm">Today</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="tomorrow" data-testid="button-date-tomorrow" className="flex-shrink-0">
+                    <Clock className="mr-1.5 md:mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
+                    <span className="text-xs md:text-sm">Tomorrow</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="upcoming" data-testid="button-date-upcoming" className="flex-shrink-0">
+                    <TrendingUp className="mr-1.5 md:mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
+                    <span className="text-xs md:text-sm">Upcoming</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="past" data-testid="button-date-past" className="flex-shrink-0">
+                    <List className="mr-1.5 md:mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
+                    <span className="text-xs md:text-sm">Past</span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 md:px-8 lg:px-12 py-8">
-        {/* Configuration Status Banner */}
+      {/* Main Content - Simplified and Clean */}
+      <main className="w-full px-4 md:px-6 py-4 md:py-6 max-w-7xl mx-auto">
+        {/* Data Source Status - Compact */}
         {dataSourceStatus && (
-          <div className="mb-8">
+          <div className="mb-4">
             <ConfigStatusBanner status={dataSourceStatus} />
           </div>
         )}
 
         {isLoading ? (
-          <div className="space-y-8">
-            <div className="h-96 rounded-lg bg-card animate-pulse" />
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <div className="lg:col-span-8 space-y-8">
-                <div className="h-64 rounded-lg bg-card animate-pulse" />
-                <div className="h-96 rounded-lg bg-card animate-pulse" />
-              </div>
-              <div className="lg:col-span-4 space-y-8">
-                <div className="h-80 rounded-lg bg-card animate-pulse" />
-              </div>
-            </div>
+          <div className="space-y-4">
+            <div className="h-48 md:h-64 rounded-lg bg-card/50 animate-pulse" />
+            <div className="h-96 rounded-lg bg-card/50 animate-pulse" />
           </div>
         ) : (
-          <div className="space-y-8">
-            {/* Apex Pick Hero Card (if available) */}
+          <div className="space-y-6">
+            {/* Apex Pick - Compact Version */}
             {apexPrediction && (
-              <ApexPickCard prediction={apexPrediction} />
+              <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-4 md:p-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Trophy className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+                      <span className="text-xs md:text-sm font-medium text-primary uppercase">Top Pick</span>
+                    </div>
+                    <h2 className="text-base md:text-lg lg:text-xl font-bold mb-1" data-testid="text-match">
+                      {apexPrediction.teams.home} vs {apexPrediction.teams.away}
+                    </h2>
+                    <p className="text-xs md:text-sm text-muted-foreground mb-3">{apexPrediction.league}</p>
+                    <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-muted-foreground">Bet:</span>
+                        <span className="font-semibold" data-testid="text-bet-type">{apexPrediction.betType}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-muted-foreground">Odds:</span>
+                        <span className="font-bold text-primary" data-testid="text-odds">{apexPrediction.bestOdds.toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-muted-foreground">Confidence:</span>
+                        <span className="font-semibold" data-testid="text-confidence">{apexPrediction.confidenceScore}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full md:w-auto"
+                    data-testid="button-view-details"
+                  >
+                    View Full Analysis
+                  </Button>
+                </div>
+              </div>
             )}
 
-            {/* All Games Grouped by League */}
+            {/* All Games - Clean List */}
             {groupedGames && groupedGames.leagues.length > 0 ? (
-              <AllGamesList groupedGames={groupedGames} />
+              <AllGamesList 
+                groupedGames={groupedGames} 
+                onGameClick={(game) => navigate(`/match/${game.id}`)}
+              />
             ) : gamesLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading games...</p>
+              <div className="text-center py-12 md:py-20">
+                <div className="animate-spin rounded-full h-10 w-10 md:h-12 md:w-12 border-b-2 border-primary mx-auto mb-3 md:mb-4"></div>
+                <p className="text-sm md:text-base text-muted-foreground">Loading games...</p>
               </div>
             ) : (
-              <div className="text-center py-12">
-                <Trophy className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No Games Available</h3>
-                <p className="text-muted-foreground">
+              <div className="text-center py-12 md:py-20">
+                <Trophy className="mx-auto h-10 w-10 md:h-12 md:w-12 text-muted-foreground/50 mb-3 md:mb-4" />
+                <h3 className="text-base md:text-lg font-medium mb-2">No Games Available</h3>
+                <p className="text-xs md:text-sm text-muted-foreground max-w-md mx-auto px-4">
                   No games found for the selected filters. Try changing your sport or date selection.
                 </p>
               </div>
             )}
-
-            {/* Apex Pick Details (if available) */}
-            {apexPrediction && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
-                {/* Left Column - Primary Content */}
-                <div className="lg:col-span-8 space-y-8">
-                  {/* Metrics Grid */}
-                  <MetricsGrid prediction={apexPrediction} />
-
-                  {/* All Betting Markets */}
-                  {apexPrediction.markets && apexPrediction.markets.length > 0 && (
-                    <AllMarketsPanel markets={apexPrediction.markets} />
-                  )}
-
-                  {/* Risk Assessment */}
-                  <RiskAssessmentPanel riskAssessment={apexPrediction.riskAssessment} />
-
-                  {/* Justification */}
-                  <JustificationSection justification={apexPrediction.justification} />
-
-                  {/* Market Analysis */}
-                  <MarketAnalysisTable prediction={apexPrediction} />
-                </div>
-
-                {/* Right Column - Sidebar */}
-                <div className="lg:col-span-4 space-y-8">
-                  {/* Contingency Pick */}
-                  <ContingencyPickCard contingency={apexPrediction.contingencyPick} />
-
-                  {/* Historical Performance */}
-                  <HistoricalPerformanceChart sport={selectedSport === 'All' ? undefined : selectedSport} />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-        {!apexPrediction && !groupedGames && (
-          <div className="flex items-center justify-center min-h-96">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-                <RefreshCw className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">No Prediction Available</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Click refresh to fetch the latest Apex prediction
-              </p>
-              <Button onClick={() => refetch()} data-testid="button-refresh-empty">
-                Fetch Prediction
-              </Button>
-            </div>
           </div>
         )}
       </main>

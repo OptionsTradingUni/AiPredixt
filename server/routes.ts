@@ -164,6 +164,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get detailed match information
+  app.get("/api/games/:id", async (req, res) => {
+    try {
+      const gameId = req.params.id;
+      const matchDetail = await storage.getMatchDetail(gameId);
+      
+      if (!matchDetail) {
+        return res.status(404).json({ error: 'Match not found' });
+      }
+      
+      res.json(matchDetail);
+    } catch (error) {
+      console.error('Error fetching match detail:', error);
+      res.status(500).json({ error: 'Failed to fetch match detail' });
+    }
+  });
+
   // Get H2H (Head-to-Head) data for two teams
   app.get("/api/h2h", async (req, res) => {
     try {

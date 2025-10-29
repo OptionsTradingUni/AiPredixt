@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Dashboard from "@/pages/dashboard";
 import AllGamesPage from "@/pages/all-games";
 import GamesPage from "@/pages/games";
+import MatchDetailPage from "@/pages/match-detail";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/all-games" component={AllGamesPage} />
       <Route path="/games" component={GamesPage} />
+      <Route path="/match/:id" component={MatchDetailPage} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -305,3 +305,74 @@ export interface GroupedGamesResponse {
     to: string;
   };
 }
+
+export interface TeamForm {
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  form: string; // e.g., "WDWLW"
+  lastMatches: {
+    opponent: string;
+    result: 'W' | 'D' | 'L';
+    score: string;
+    date: string;
+  }[];
+}
+
+export interface H2HMatch {
+  date: string;
+  homeTeam: string;
+  awayTeam: string;
+  score: string;
+  competition: string;
+}
+
+export interface StandingsEntry {
+  position: number;
+  team: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
+}
+
+export interface BookmakerOdds {
+  bookmaker: string;
+  home: number;
+  draw?: number;
+  away: number;
+  lastUpdated: string;
+}
+
+export interface MatchDetail extends Game {
+  venue?: string;
+  referee?: string;
+  weather?: string;
+  h2h?: {
+    all: H2HMatch[];
+    homeAdvantage: H2HMatch[];
+    awayAdvantage: H2HMatch[];
+  };
+  standings?: StandingsEntry[];
+  form?: {
+    home: TeamForm;
+    away: TeamForm;
+  };
+  advancedStats?: {
+    home: AdvancedStats;
+    away: AdvancedStats;
+  };
+  bookmakerOdds?: BookmakerOdds[];
+  prediction?: ApexPrediction;
+  injuries?: {
+    home: string[];
+    away: string[];
+  };
+  news?: NewsItem[];
+}

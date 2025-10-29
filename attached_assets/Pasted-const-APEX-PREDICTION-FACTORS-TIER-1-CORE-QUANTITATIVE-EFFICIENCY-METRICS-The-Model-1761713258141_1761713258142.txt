@@ -1,0 +1,72 @@
+const APEX_PREDICTION_FACTORS = {
+  // --- TIER 1: CORE QUANTITATIVE & EFFICIENCY METRICS (The Model Foundation) ---
+  QUANTITATIVE_EFFICIENCY: [
+    { factor: "Pace Differential", type: "Stat", description: "How much one team can force their preferred tempo (Crucial for NBA/NHL Totals)." },
+    { factor: "True Efficiency Gap (Net Rating)", type: "Stat", description: "Net Rating (Offense - Defense) adjusted per 100 possessions/events." },
+    { factor: "Yards Per Play Differential", type: "Stat", description: "YPP Offense minus YPP Defense. Eliminates volume/skewing." },
+    { factor: "Red Zone TD Conversion %", type: "Stat", description: "Ability to finish drives with maximum points (7 vs 3)." },
+    { factor: "Expected vs Actual Variance (xG/BABIP)", type: "Luck Model", description: "Identifying teams/players due for positive or negative regression (i.e., 'unlucky' vs 'lucky')." },
+    { factor: "Special Teams Combined Rating", type: "Stat", description: "PP% + PK% (NHL/Soccer/Basketball). Performance in critical situations." },
+    { factor: "Matchup H2H Efficiency", type: "Stat", description: "Player/Team historical efficiency specifically against the current opponent's scheme/style." },
+  ],
+
+  // --- TIER 2: SCHEDULING & LOGISTICAL NIGHTMARES (The Physical Toll) ---
+  LOGISTICAL_SCHEDULING: [
+    { factor: "Rest Disparity (Days)", type: "Schedule", description: "Difference in days rested between opponents. Higher disparity favors the rested team." },
+    { factor: "Extreme Scheduling Density", type: "Schedule", description: "Flagging B2B, 3-in-4, or 5-in-7 sequences (Maximum Fatigue Spots)." },
+    { factor: "Travel Direction (Circadian Impact)", type: "Schedule", description: "West-to-East travel (losing hours) is a higher negative flag." },
+    { factor: "Time Zone Acclimation Days", type: "Schedule", description: "Days spent in the new time zone (should be >2 days for recovery)." },
+    { factor: "Point in Road Trip", type: "Schedule", description: "First game (fresh) vs. Last game (mentally checked out)." },
+    { factor: "Short Week Disadvantage", type: "Schedule", description: "Less than 5 days rest (NFL Thursday game) or long layovers (risk of rust)." },
+    { factor: "Logistics Chaos Flag", type: "Proxy", description: "Reported flight delays, bus breakdowns, or delayed equipment arrival." },
+    { factor: "Opponent Look-Ahead Trap", type: "Schedule", description: "Is opponent focused on their next game (a rival or playoff team)?" },
+  ],
+
+  // --- TIER 3: PLAYER & TEAM PSYCHOLOGY (The Ghost Factors) ---
+  PSYCHOLOGICAL_INTANGIBLES: [
+    { factor: "Revenge Motivation", type: "Contextual Flag", description: "Loss earlier in the season (especially if embarrassing or controversial)." },
+    { factor: "Let-Down Spot Flag", type: "Contextual Flag", description: "Game immediately following an emotional, season-defining win." },
+    { factor: "Statement Game Motivation", type: "Contextual Flag", description: "Underdog team playing on national TV for respect/relevance." },
+    { factor: "Internal Morale Proxy", type: "Proxy", description: "Sentiment analysis of press conference transcripts (resignation, frustration, or unity)." },
+    { factor: "Coach's Hot Seat", type: "Proxy", description: "Coach rumored to be fired. Model team response (quitting vs rallying)." },
+    { factor: "Locker Room Friction/Cliques", type: "Proxy", description: "Reported feuds, player-coach friction, social media unfollows (The Digital Footprint)." },
+    { factor: "Player Contract Year", type: "Contextual Flag", description: "Key player playing for maximum future payday." },
+    { factor: "Personal Life Events (Negative)", type: "Proxy", description: "Recent death, divorce, family illness, financial trouble (High Stress-Injury Link)." },
+    { factor: "Personal Life Events (Positive - Kids/Family)", type: "Proxy", description: "Recent birth of child, wedding, major positive life change (Potential energy/focus spike)." },
+    { factor: "Off-Field Business Distress", type: "Proxy", description: "Known failing business venture causing friction with teammates or distraction." },
+    { factor: "Gambling/Bribe Anomaly", type: "Market API", description: "Flagging low-tier games with extreme betting volume discrepancies (Possible ethical/bribe risk)." },
+  ],
+
+  // --- TIER 4: ENVIRONMENT, VENUE & OFFICIALS (The Unseen Hand) ---
+  ENVIRONMENTAL_BIAS: [
+    { factor: "Altitude Disadvantage", type: "Geographic", description: "Impact of thin air on unacclimated teams (affects fatigue and ball flight)." },
+    { factor: "Hyper-Local Wind Gusts", type: "Weather API", description: "Wind speed and direction, especially gusting > 20mph (Game changer for passing/kicking)." },
+    { factor: "RealFeel Temperature/Humidity", type: "Weather API", description: "The true factor for fatigue, hydration, and cramping risk." },
+    { factor: "Playing Surface Condition", type: "Venue Data", description: "Grass vs. Turf, old vs. new turf, or ice quality (fast/slow)." },
+    { factor: "Advanced Home Field Edge", type: "Venue Data", description: "W/L margin differential, or turnover differential at home (Goes beyond W/L record)." },
+    { factor: "Official's Tendency/Style", type: "Official Data", description: "Referees categorized as 'Tight' (finesse favored) or 'Loose' (physical favored)." },
+    { factor: "Official's Known H/A Bias", type: "Official Data", description: "Historical data showing bias toward home team or away team in terms of foul/penalty calls." },
+    { factor: "Official's Travel Fatigue", type: "Official Proxy", description: "Official's recent travel schedule (Fatigue can impact split-second decision-making)." },
+  ],
+
+  // --- TIER 5: TACTICAL, DEPTH & SECOND-ORDER IMPACTS ---
+  TACTICAL_DEPTH_IMPACT: [
+    { factor: "Cluster Injury Impact", type: "Roster/Model", description: "The catastrophic failure point of multiple injuries at *one* position group (e.g., O-Line, CBs)." },
+    { factor: "Second-Order Injury Effect", type: "Model Simulation", description: "Modeling the usage rate, efficiency, and turnover rate changes of the *backup* and secondary players." },
+    { factor: "Player-vs-Player Simulation", type: "Stat/Model", description: "Granular simulation of key 1-on-1 matchups (e.g., Star WR vs. Top CB)." },
+    { factor: "Coach's ATO/Halftime Record", type: "Proxy", description: "Success rate of coach's in-game adjustments (Halftime/Time-Out plays)." },
+    { factor: "Medical Staff Reputation", type: "Proxy", description: "Is the team known for successful injury returns or constant re-injuries/misdiagnoses?" },
+    { factor: "Rookie Wall/Freshman Factor", type: "Roster Flag", description: "High number of rookies in key roles, prone to mental fatigue in late season or road games." },
+    { factor: "Equipment Change Flag", type: "Proxy", description: "Player recently changed shoes, clubs, or hockey stick (Creates a period of inconsistency)." },
+  ],
+
+  // --- TIER 6: MARKET MICROSTRUCTURE & META-LEARNING ---
+  MARKET_META_LEARNING: [
+    { factor: "Reverse Line Movement (RLM)", type: "Market API", description: "The primary signal of 'Sharp' money acting against public sentiment." },
+    { factor: "Sharp vs Public Money Split", type: "Market API", description: "Disparity between bet volume vs. actual money wagered." },
+    { factor: "Media Hype Overload", type: "Proxy", description: "Universal national media coverage creates an over-valued public price (A 'Fade' signal)." },
+    { factor: "Closing Line Value (CLV)", type: "Performance Log", description: "Did our prediction beat the final market line? (The true measure of long-term success)." },
+    { factor: "Bias Audit (Internal)", type: "Meta-Learning", description: "Flagging personal biases (Team A favoritism, anti-referee bias, etc.) for mitigation." },
+  ],
+};
+

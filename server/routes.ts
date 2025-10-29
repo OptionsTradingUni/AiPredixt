@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { SportType } from "@shared/schema";
+import { h2hService } from "./services/h2h-service";
+import { leagueStandingsService } from "./services/league-standings-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint for Railway
@@ -105,6 +107,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching games:', error);
       res.status(500).json({ error: 'Failed to fetch games' });
+    }
+  });
+
+  // Get H2H (Head-to-Head) data for two teams
+  app.get("/api/h2h", async (req, res) => {
+    try {
+      const teamA = req.query.teamA as string;
+      const teamB = req.query.teamB as string;
+      const sport = req.query.sport as string || 'Football';
+      
+      if (!teamA || !teamB) {
+        return res.status(400).json({ error: 'teamA and teamB are required' });
+      }
+      
+      const h2hData = await h2hService.getH2HData(teamA, teamB, sport);
+      res.json(h2hData);
+    } catch (error) {
+      console.error('Error fetching H2H data:', error);
+      res.status(500).json({ error: 'Failed to fetch H2H data' });
+    }
+  });
+
+  // Get league standings
+  app.get("/api/standings", async (req, res) => {
+    try {
+      const league = req.query.league as string;
+      const season = req.query.season as string || '2024/25';
+      
+      if (!league) {
+        return res.status(400).json({ error: 'league is required' });
+      }
+      
+      const standings = await leagueStandingsService.getLeagueStandings(league, season);
+      res.json(standings);
+    } catch (error) {
+      console.error('Error fetching standings:', error);
+      res.status(500).json({ error: 'Failed to fetch standings' });
+    }
+  });
+
+  // Get team form
+  app.get("/api/team-form", async (req, res) => {
+    try {
+      const team = req.query.team as string;
+      const matches = parseInt(req.query.matches as string) || 5;
+      
+      if (!team) {
+        return res.status(400).json({ error: 'team is required' });
+      }
+      
+      const form = await leagueStandingsService.getTeamForm(team, matches);
+      res.json(form);
+    } catch (error) {
+      console.error('Error fetching team form:', error);
+      res.status(500).json({ error: 'Failed to fetch team form' });
     }
   });
 

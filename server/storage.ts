@@ -120,12 +120,57 @@ export class MemStorage implements IStorage {
   }
 
   async getAllPredictions(sport?: SportType, dateFilter?: string): Promise<ApexPrediction[]> {
-    const targetSport = sport || 'Football';
+    const now = Date.now();
     
-    // Check cache first (cache key includes date filter)
+    // If no specific sport, analyze ALL sports
+    if (!sport) {
+      const allSports: SportType[] = ['Football', 'Basketball', 'Tennis', 'Hockey'];
+      const cacheKey = `ALL-${dateFilter || 'all'}`;
+      const cached = this.allGamesCache.get(cacheKey as any);
+      
+      if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
+        console.log(`✅ Returning cached ALL sports predictions (${cached.predictions.length} games)`);
+        return cached.predictions;
+      }
+      
+      try {
+        console.log(`🚀 Analyzing ALL sports games (Football, Basketball, Tennis, Hockey)${dateFilter ? ` (date: ${dateFilter})` : ''}...`);
+        
+        // Fetch predictions from all sports in parallel
+        const allSportsResults = await Promise.all(
+          allSports.map(async (sportType) => {
+            try {
+              const { predictions } = await predictionEngine.analyzeAllGames(sportType, dateFilter);
+              return predictions;
+            } catch (error) {
+              console.error(`❌ Failed to analyze ${sportType}:`, error);
+              return [];
+            }
+          })
+        );
+        
+        // Flatten and sort by edge (best opportunities first)
+        const allPredictions = allSportsResults.flat().sort((a, b) => b.edge - a.edge);
+        
+        // Cache the combined predictions
+        this.allGamesCache.set(cacheKey as any, {
+          predictions: allPredictions,
+          timestamp: now,
+        });
+        
+        console.log(`✅ ${allPredictions.length} total predictions generated across all sports`);
+        return allPredictions;
+        
+      } catch (error) {
+        console.error('❌ All-sports prediction generation failed:', error);
+        throw error;
+      }
+    }
+    
+    // Single sport requested
+    const targetSport = sport;
     const cacheKey = `${targetSport}-${dateFilter || 'all'}`;
     const cached = this.allGamesCache.get(cacheKey as any);
-    const now = Date.now();
     
     if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
       console.log(`✅ Returning cached all-games predictions for ${targetSport}${dateFilter ? ` (${dateFilter})` : ''} (${cached.predictions.length} games)`);

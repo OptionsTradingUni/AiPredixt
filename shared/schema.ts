@@ -126,6 +126,20 @@ export interface LeagueInfo {
   popularity: 'High' | 'Medium' | 'Low';
 }
 
+export interface AdvancedStats {
+  xG?: number; // Expected Goals
+  xGA?: number; // Expected Goals Against
+  xA?: number; // Expected Assists
+  xPTS?: number; // Expected Points
+  possession?: number; // Possession percentage
+  shots?: number;
+  shotsOnTarget?: number;
+  corners?: number;
+  fouls?: number;
+  yellowCards?: number;
+  redCards?: number;
+}
+
 export interface ApexPrediction {
   id: string;
   sport: SportType;
@@ -136,6 +150,12 @@ export interface ApexPrediction {
   };
   league: string;
   leagueInfo?: LeagueInfo;
+  
+  // Advanced Statistics (xG, xA, xPTS)
+  advancedStats?: {
+    home: AdvancedStats;
+    away: AdvancedStats;
+  };
   
   // Legacy fields for backward compatibility
   betType: string;

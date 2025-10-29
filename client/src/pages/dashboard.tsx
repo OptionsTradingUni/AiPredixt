@@ -12,6 +12,7 @@ import { HistoricalPerformanceChart } from '@/components/historical-performance-
 import { ConfigStatusBanner } from '@/components/config-status-banner';
 import { AllMarketsPanel } from '@/components/all-markets-panel';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { LeagueGroupedGames } from '@/components/league-grouped-games';
 import { RefreshCw, List, Calendar, Clock, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,7 +36,7 @@ export default function Dashboard() {
     queryKey: ['/api/data-source-status'],
   });
 
-  const { data: apexPrediction, isLoading, refetch } = useQuery<ApexPrediction>({
+  const { data: apexPrediction, isLoading: apexLoading, refetch: refetchApex } = useQuery<ApexPrediction>({
     queryKey: ['/api/apex-prediction', selectedSport, selectedDate],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -47,6 +48,25 @@ export default function Dashboard() {
       return response.json();
     },
   });
+
+  const { data: allPredictions, isLoading: allLoading, refetch: refetchAll } = useQuery<ApexPrediction[]>({
+    queryKey: ['/api/all-predictions', selectedSport, selectedDate],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (selectedSport !== 'All') params.set('sport', selectedSport);
+      params.set('date', selectedDate);
+      const queryString = params.toString();
+      const response = await fetch(`/api/all-predictions${queryString ? `?${queryString}` : ''}`);
+      if (!response.ok) throw new Error('Failed to fetch predictions');
+      return response.json();
+    },
+  });
+
+  const isLoading = apexLoading || allLoading;
+  const refetch = () => {
+    refetchApex();
+    refetchAll();
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -149,6 +169,11 @@ export default function Dashboard() {
           <div className="space-y-8">
             {/* Apex Pick Hero Card */}
             <ApexPickCard prediction={apexPrediction} />
+
+            {/* All Games Grouped by League */}
+            {allPredictions && allPredictions.length > 0 && (
+              <LeagueGroupedGames predictions={allPredictions} />
+            )}
 
             {/* Main Grid Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

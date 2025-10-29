@@ -5,6 +5,8 @@ import { advancedFactorsEngine } from './advanced-factors';
 import { freeSourcesScraper } from './free-sources-scraper';
 import { ProbabilityCalculator } from './probability-calculator';
 import { leagueMetadataService } from './league-metadata';
+import { advancedStatsCalculator } from './advanced-stats-calculator';
+import { specialtyMarketsCalculator } from './specialty-markets-calculator';
 import { ApexPrediction, SportType } from '@shared/schema';
 
 export class PredictionEngine {
@@ -1148,6 +1150,97 @@ export class PredictionEngine {
       }
     }
 
+    // Add Specialty Markets: Corners and Cards (for Football/Soccer only)
+    if (gameData && game.sport === 'soccer') {
+      const homeTeamData = {
+        teamName: game.homeTeam,
+        cornersFor: gameData.homeTeam?.corners,
+        possession: gameData.homeTeam?.possession,
+        yellowCards: gameData.homeTeam?.yellowCards,
+        redCards: gameData.homeTeam?.redCards,
+        fouls: gameData.homeTeam?.fouls,
+      };
+      
+      const awayTeamData = {
+        teamName: game.awayTeam,
+        cornersFor: gameData.awayTeam?.corners,
+        possession: gameData.awayTeam?.possession,
+        yellowCards: gameData.awayTeam?.yellowCards,
+        redCards: gameData.awayTeam?.redCards,
+        fouls: gameData.awayTeam?.fouls,
+      };
+      
+      // Generate Corners Markets
+      const cornersMarkets = specialtyMarketsCalculator.generateCornersMarkets(homeTeamData, awayTeamData);
+      cornersMarkets.forEach((cornerMarket) => {
+        // Simulate bookmaker odds (add margin)
+        const fairOdds = 100 / cornerMarket.probability;
+        const bookmakerOdds = fairOdds * 1.08; // 8% margin
+        const impliedProb = (1 / bookmakerOdds) * 100;
+        const edge = cornerMarket.probability - impliedProb;
+        const kelly = this.calculateKellyStake(cornerMarket.probability / 100, bookmakerOdds);
+        
+        markets.push({
+          category: 'other',
+          selection: `${cornerMarket.market}: ${cornerMarket.selection}`,
+          odds: bookmakerOdds,
+          bookmaker: game.bookmaker,
+          marketLiquidity: 'Medium',
+          calculatedProbability: {
+            ensembleAverage: cornerMarket.probability,
+            calibratedRange: {
+              lower: Math.max(0, cornerMarket.probability - 5),
+              upper: Math.min(100, cornerMarket.probability + 5),
+            },
+          },
+          impliedProbability: impliedProb,
+          edge: edge,
+          confidenceScore: cornerMarket.confidence,
+          recommendedStake: {
+            kellyFraction: `${kelly.toFixed(2)} Units`,
+            unitDescription: 'Quarter-Kelly formula',
+            percentageOfBankroll: kelly,
+          },
+          dataSources: [...dataSources, 'Corners Calculator'],
+        });
+      });
+      
+      // Generate Cards Markets
+      const cardsMarkets = specialtyMarketsCalculator.generateCardsMarkets(homeTeamData, awayTeamData);
+      cardsMarkets.forEach((cardMarket) => {
+        // Simulate bookmaker odds (add margin)
+        const fairOdds = 100 / cardMarket.probability;
+        const bookmakerOdds = fairOdds * 1.10; // 10% margin (cards markets have higher margins)
+        const impliedProb = (1 / bookmakerOdds) * 100;
+        const edge = cardMarket.probability - impliedProb;
+        const kelly = this.calculateKellyStake(cardMarket.probability / 100, bookmakerOdds);
+        
+        markets.push({
+          category: 'other',
+          selection: `${cardMarket.market}: ${cardMarket.selection}`,
+          odds: bookmakerOdds,
+          bookmaker: game.bookmaker,
+          marketLiquidity: 'Medium',
+          calculatedProbability: {
+            ensembleAverage: cardMarket.probability,
+            calibratedRange: {
+              lower: Math.max(0, cardMarket.probability - 5),
+              upper: Math.min(100, cardMarket.probability + 5),
+            },
+          },
+          impliedProbability: impliedProb,
+          edge: edge,
+          confidenceScore: cardMarket.confidence,
+          recommendedStake: {
+            kellyFraction: `${kelly.toFixed(2)} Units`,
+            unitDescription: 'Quarter-Kelly formula',
+            percentageOfBankroll: kelly,
+          },
+          dataSources: [...dataSources, 'Cards Calculator'],
+        });
+      });
+    }
+
     return markets;
   }
 
@@ -1175,6 +1268,33 @@ export class PredictionEngine {
     // Get league metadata
     const leagueInfo = leagueMetadataService.getLeagueMetadata(game.league);
 
+    // Calculate advanced stats (xG, xA, xPTS) from game data
+    let advancedStats;
+    if (gameData) {
+      advancedStats = {
+        home: advancedStatsCalculator.calculateAllStats({
+          teamName: game.homeTeam,
+          goalsFor: gameData.homeTeam?.goalsFor,
+          goalsAgainst: gameData.homeTeam?.goalsAgainst,
+          shotsFor: gameData.homeTeam?.shots,
+          shotsOnTarget: gameData.homeTeam?.shotsOnTarget,
+          form: gameData.homeTeam?.form,
+          possession: gameData.homeTeam?.possession,
+          corners: gameData.homeTeam?.corners,
+        }),
+        away: advancedStatsCalculator.calculateAllStats({
+          teamName: game.awayTeam,
+          goalsFor: gameData.awayTeam?.goalsFor,
+          goalsAgainst: gameData.awayTeam?.goalsAgainst,
+          shotsFor: gameData.awayTeam?.shots,
+          shotsOnTarget: gameData.awayTeam?.shotsOnTarget,
+          form: gameData.awayTeam?.form,
+          possession: gameData.awayTeam?.possession,
+          corners: gameData.awayTeam?.corners,
+        }),
+      };
+    }
+
     return {
       id: game.gameId,
       sport: this.mapSportName(game.sport),
@@ -1193,6 +1313,9 @@ export class PredictionEngine {
         home: game.homeTeam,
         away: game.awayTeam,
       },
+      
+      // Advanced Statistics (xG, xA, xPTS)
+      advancedStats,
       
       // Legacy fields (map to best market for backward compatibility)
       betType: bestMarket?.selection || 'Handicap',

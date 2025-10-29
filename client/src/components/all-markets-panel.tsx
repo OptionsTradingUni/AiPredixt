@@ -47,6 +47,9 @@ export function AllMarketsPanel({ markets }: AllMarketsPanelProps) {
       correct_score: 'Correct Score',
       half_full: 'Half-Time / Full-Time',
       handicap: 'Asian Handicap',
+      double_chance: 'Double Chance',
+      first_half: 'First Half',
+      player_prop: 'Player Props',
       other: 'Other Markets',
     };
     return names[category] || category;
@@ -65,9 +68,14 @@ export function AllMarketsPanel({ markets }: AllMarketsPanelProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue={categories[0]} className="w-full">
-          <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${Math.min(categories.length, 4)}, 1fr)` }}>
+          <TabsList className="flex flex-wrap justify-start gap-1 h-auto bg-muted p-2">
             {categories.map((category) => (
-              <TabsTrigger key={category} value={category} data-testid={`tab-market-${category}`}>
+              <TabsTrigger 
+                key={category} 
+                value={category} 
+                data-testid={`tab-market-${category}`}
+                className="flex-shrink-0 data-[state=active]:bg-background"
+              >
                 {getCategoryName(category)}
               </TabsTrigger>
             ))}

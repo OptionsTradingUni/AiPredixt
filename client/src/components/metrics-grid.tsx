@@ -11,14 +11,14 @@ export function MetricsGrid({ prediction }: MetricsGridProps) {
     {
       icon: Calculator,
       label: 'Calculated True Probability',
-      value: `${(prediction.calculatedProbability.ensembleAverage * 100).toFixed(2)}%`,
-      sublabel: `Range: ${(prediction.calculatedProbability.calibratedRange.lower * 100).toFixed(1)}% - ${(prediction.calculatedProbability.calibratedRange.upper * 100).toFixed(1)}%`,
+      value: `${prediction.calculatedProbability.ensembleAverage.toFixed(2)}%`,
+      sublabel: `Range: ${prediction.calculatedProbability.calibratedRange.lower.toFixed(1)}% - ${prediction.calculatedProbability.calibratedRange.upper.toFixed(1)}%`,
       testId: 'text-calculated-probability',
     },
     {
       icon: Percent,
       label: 'Implied Probability',
-      value: `${(prediction.impliedProbability * 100).toFixed(2)}%`,
+      value: `${prediction.impliedProbability.toFixed(2)}%`,
       sublabel: 'From market odds',
       testId: 'text-implied-probability',
     },

@@ -27,6 +27,9 @@ export interface Probability {
     lower: number;
     upper: number;
   };
+  marketImplied?: number;
+  modelType?: 'conservative' | 'aggressive' | 'balanced';
+  rawUncapped?: number;
 }
 
 export interface RiskAssessment {

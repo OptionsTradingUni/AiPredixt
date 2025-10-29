@@ -40,7 +40,7 @@ export class PredictionEngine {
     analysis: any;
     scrapedIntel: any;
     freeSourceData: any;
-    trueProb: number;
+    trueProbData: { capped: number; raw: number; marketImplied: number };
   }> {
     console.log(`🔬 PHASE 2: Deep diving ${game.homeTeam} vs ${game.awayTeam}...`);
     console.log(`📡 Data sources for this game: ${game.sources.join(', ')}`);
@@ -71,7 +71,7 @@ export class PredictionEngine {
 
     // SCRAPE EVERYTHING from the internet for this match
     console.log(`🕷️  Initiating comprehensive web scraping from 20+ sources...`);
-    const scrapedIntel = await webScraperService.scrapeMatchIntelligence(
+    const scrapedIntel = await webScraperService.scrapeComprehensiveIntelligence(
       game.homeTeam,
       game.awayTeam,
       game.sport,
@@ -113,11 +113,11 @@ export class PredictionEngine {
     };
 
     // Calculate true probability using ALL factors including scraped data + free sources
-    const trueProb = this.calculateTrueProbability(analysis, game);
+    const trueProbData = this.calculateTrueProbability(analysis, game);
 
-    console.log(`✅ True probability calculated with ${freeSourceData.totalSources + game.sources.length}+ data sources: ${(trueProb * 100).toFixed(1)}%`);
+    console.log(`✅ True probability calculated with ${freeSourceData.totalSources + game.sources.length}+ data sources: ${(trueProbData.capped * 100).toFixed(1)}% (Raw: ${(trueProbData.raw * 100).toFixed(1)}%, Market: ${(trueProbData.marketImplied * 100).toFixed(1)}%)`);
 
-    return { gameData, analysis, scrapedIntel, freeSourceData, trueProb };
+    return { gameData, analysis, scrapedIntel, freeSourceData, trueProbData };
   }
 
   // PHASE 3: Causal Narrative & Synthesis
@@ -155,11 +155,11 @@ export class PredictionEngine {
     // Deep dive on top 3-5 candidates
     const candidates = await Promise.all(
       shortlist.slice(0, 3).map(async (game) => {
-        const { gameData, analysis, scrapedIntel, freeSourceData, trueProb } = await this.deepDive(game);
-        const ev = this.calculateEV(trueProb, game.odds.spread?.odds || 2.0);
+        const { gameData, analysis, scrapedIntel, freeSourceData, trueProbData } = await this.deepDive(game);
+        const ev = this.calculateEV(trueProbData.capped, game.odds.spread?.odds || 2.0);
         const confidence = this.calculateConfidence(analysis);
         
-        return { game, gameData, analysis, scrapedIntel, freeSourceData, trueProb, ev, confidence };
+        return { game, gameData, analysis, scrapedIntel, freeSourceData, trueProbData, ev, confidence };
       })
     );
 
@@ -171,13 +171,13 @@ export class PredictionEngine {
 
     // Calculate Kelly Criterion stake
     const odds = best.game.odds.spread?.odds || 2.0;
-    const stake = this.calculateKellyStake(best.trueProb, odds);
+    const stake = this.calculateKellyStake(best.trueProbData.capped, odds);
 
     // Build final prediction object
     const prediction = this.buildApexPrediction(
       best.game,
       best.gameData,
-      best.trueProb,
+      best.trueProbData,
       best.ev,
       best.confidence,
       stake,
@@ -233,8 +233,8 @@ export class PredictionEngine {
     const predictions = await Promise.all(
       shortlist.map(async (game) => {
         try {
-          const { gameData, analysis, scrapedIntel, freeSourceData, trueProb } = await this.deepDive(game);
-          const ev = this.calculateEV(trueProb, game.odds.spread?.odds || 2.0);
+          const { gameData, analysis, scrapedIntel, freeSourceData, trueProbData } = await this.deepDive(game);
+          const ev = this.calculateEV(trueProbData.capped, game.odds.spread?.odds || 2.0);
           const confidence = this.calculateConfidence(analysis);
           
           // Build narrative
@@ -242,13 +242,13 @@ export class PredictionEngine {
           
           // Calculate stake
           const odds = game.odds.spread?.odds || 2.0;
-          const stake = this.calculateKellyStake(trueProb, odds);
+          const stake = this.calculateKellyStake(trueProbData.capped, odds);
           
           // Build prediction
           return this.buildApexPrediction(
             game,
             gameData,
-            trueProb,
+            trueProbData,
             ev,
             confidence,
             stake,
@@ -466,7 +466,7 @@ export class PredictionEngine {
     };
   }
 
-  private calculateTrueProbability(analysis: any, game: EnhancedOddsData): number {
+  private calculateTrueProbability(analysis: any, game: EnhancedOddsData): { capped: number; raw: number; marketImplied: number } {
     // Weighted combination of ALL factors including 490+ advanced factors
     const totalImpact = 
       (analysis.tactical.impact * analysis.tactical.weight / 100) +
@@ -483,12 +483,16 @@ export class PredictionEngine {
 
     // Base probability + adjustments
     const baseProb = 0.50;
-    const adjustedProb = baseProb + (totalImpact / 100);
+    const rawProb = baseProb + (totalImpact / 100);
+    const cappedProb = Math.max(0.45, Math.min(0.75, rawProb)); // Conservative cap for betting
+
+    // Calculate market-implied probability from odds
+    const marketImplied = game.odds.spread?.odds ? (1 / game.odds.spread.odds) : 0.5;
 
     console.log(`📊 Total impact from ${Object.keys(analysis).length} factor categories: ${totalImpact.toFixed(2)}`);
-    console.log(`🔬 Advanced factors contribution: ${(analysis.advancedFactors.impact * analysis.advancedFactors.weight / 100).toFixed(2)}`);
+    console.log(`🔬 Raw probability: ${(rawProb * 100).toFixed(1)}% | Capped (conservative): ${(cappedProb * 100).toFixed(1)}% | Market Implied: ${(marketImplied * 100).toFixed(1)}%`);
 
-    return Math.max(0.45, Math.min(0.75, adjustedProb)); // Clamp between 45-75%
+    return { capped: cappedProb, raw: rawProb, marketImplied };
   }
 
   private calculateEV(trueProb: number, odds: number): number {
@@ -1150,7 +1154,7 @@ export class PredictionEngine {
   private buildApexPrediction(
     game: EnhancedOddsData,
     gameData: GameData | null,
-    trueProb: number,
+    trueProbData: { capped: number; raw: number; marketImplied: number },
     ev: number,
     confidence: number,
     stake: number,
@@ -1161,7 +1165,7 @@ export class PredictionEngine {
 
     // Generate all betting markets
     const dataSources = game.sources || [];
-    const allMarkets = this.generateAllBettingMarkets(game, gameData, trueProb, dataSources);
+    const allMarkets = this.generateAllBettingMarkets(game, gameData, trueProbData.capped, dataSources);
     
     // Find the best market (highest positive EV)
     const bestMarket = allMarkets.reduce((best, market) => 
@@ -1196,11 +1200,14 @@ export class PredictionEngine {
       bookmaker: game.bookmaker,
       marketLiquidity: 'High' as const,
       calculatedProbability: {
-        ensembleAverage: trueProb * 100,
+        ensembleAverage: trueProbData.capped * 100,
         calibratedRange: {
-          lower: (trueProb - 0.05) * 100,
-          upper: (trueProb + 0.05) * 100,
+          lower: (trueProbData.capped - 0.05) * 100,
+          upper: (trueProbData.capped + 0.05) * 100,
         },
+        marketImplied: trueProbData.marketImplied * 100,
+        modelType: 'conservative' as const,
+        rawUncapped: trueProbData.raw * 100,
       },
       impliedProbability: impliedProb,
       edge: bestMarket?.edge || ev,

@@ -1,12 +1,24 @@
 # Apex AI Sports Prediction Engine
 
 ## Overview
-A sophisticated AI-powered sports betting prediction platform that provides comprehensive analytics, risk assessment, and detailed justifications for high-probability betting opportunities across Football, Tennis, Basketball, and Hockey.
+A sophisticated AI-powered sports betting prediction platform that provides comprehensive analytics, risk assessment, and detailed justifications for high-probability betting opportunities across Football, Tennis, Basketball, and Hockey. Building towards the full Advanced Sports Stats & Predictions Platform as outlined in the project brief.
 
 ## Current State
-**Status:** ✅ MVP Complete - Fully functional with beautiful UI and comprehensive features
+**Status:** ✅ MVP Complete + Enhanced Probability Model - Fully functional with transparent probability calculations
 
 **Last Updated:** October 29, 2025
+
+## Recent Enhancements (October 29, 2025)
+
+### Enhanced Probability System
+- **Dual Probability Display**: Now shows BOTH conservative model (45-75% capped) AND market-implied probabilities
+- **Transparency**: Users can see the raw uncapped probability, conservative model, and market odds-based probability
+- **New Fields in Schema**:
+  - `marketImplied`: Market-implied probability from bookmaker odds
+  - `modelType`: 'conservative' | 'aggressive' | 'balanced'
+  - `rawUncapped`: Raw model probability before caps
+- **Backend Calculation**: Updated `calculateTrueProbability` to return object with all three probability values
+- **Example Output**: "Raw: 57.4%, Conservative: 57.4%, Market Implied: 52.6%"
 
 ## Features Implemented
 

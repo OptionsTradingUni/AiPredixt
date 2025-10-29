@@ -50,39 +50,11 @@ export class PredictionEngine {
       freeSourcesScraper.gatherAllFreeData(game.awayTeam, game.sport, game.league),
     ]);
 
-    // If API not configured, use simulation data
-    let gameData = initialGameData;
+    // Use real game data from APIs/scraping only - no simulation fallback
+    const gameData = initialGameData;
     if (!gameData) {
-      console.log('⚠️  Using simulation data (configure API_FOOTBALL_KEY for real data)');
-      gameData = {
-        gameId: game.gameId,
-        sport: game.sport,
-        league: game.league,
-        homeTeam: game.homeTeam,
-        awayTeam: game.awayTeam,
-        gameTime: game.gameTime,
-        venue: 'Stadium',
-        homeStats: {
-          teamName: game.homeTeam,
-          form: 'WWDWW',
-          goalsFor: 35,
-          goalsAgainst: 18,
-          wins: 12,
-          losses: 3,
-          draws: 4,
-          streak: 'Won last 3',
-        },
-        awayStats: {
-          teamName: game.awayTeam,
-          form: 'WLWDL',
-          goalsFor: 28,
-          goalsAgainst: 24,
-          wins: 9,
-          losses: 6,
-          draws: 4,
-          streak: 'Mixed form',
-        },
-      };
+      console.log('❌ No game data available from APIs/scraping - skipping game');
+      throw new Error(`No game data available for ${game.homeTeam} vs ${game.awayTeam}`);
     }
 
     // SCRAPE EVERYTHING from the internet for this match

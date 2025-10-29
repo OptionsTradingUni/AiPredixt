@@ -31,7 +31,7 @@ interface DataSourceStatus {
 export default function Dashboard() {
   const [, navigate] = useLocation();
   const [selectedSport, setSelectedSport] = useState<SportType | 'All'>('All');
-  const [selectedDate, setSelectedDate] = useState<'today' | 'tomorrow' | 'upcoming' | 'past'>('today');
+  const [selectedDate, setSelectedDate] = useState<'today' | 'tomorrow' | 'upcoming' | 'past'>('upcoming');
 
   const { data: dataSourceStatus } = useQuery<DataSourceStatus>({
     queryKey: ['/api/data-source-status'],
@@ -50,16 +50,24 @@ export default function Dashboard() {
     },
   });
 
-  const { data: groupedGames, isLoading: gamesLoading, refetch: refetchGames } = useQuery<GroupedGamesResponse>({
+  const { data: groupedGames, isLoading: gamesLoading, refetch: refetchGames, error: gamesError } = useQuery<GroupedGamesResponse>({
     queryKey: ['/api/games/grouped', selectedSport, selectedDate],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (selectedSport !== 'All') params.set('sport', selectedSport);
       params.set('date', selectedDate);
       const queryString = params.toString();
+      console.log('🔍 Fetching games with query:', queryString);
       const response = await fetch(`/api/games/grouped${queryString ? `?${queryString}` : ''}`);
-      if (!response.ok) throw new Error('Failed to fetch games');
-      return response.json();
+      if (!response.ok) {
+        console.error('❌ Failed to fetch games:', response.status, response.statusText);
+        throw new Error('Failed to fetch games');
+      }
+      const data = await response.json();
+      console.log('✅ Received games data:', data);
+      console.log('📊 Leagues count:', data.leagues?.length);
+      console.log('📊 Total games:', data.totalGames);
+      return data;
     },
   });
 
@@ -112,7 +120,7 @@ export default function Dashboard() {
             
             {/* Date Filter - Horizontal Scroll on Mobile */}
             <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-              <Tabs value={selectedDate} onValueChange={(value) => setSelectedDate(value as typeof selectedDate)} data-testid="filter-date">
+              <Tabs value={selectedDate} onValueChange={(value) => setSelectedDate(value as typeof selectedDate)} data-testid="filter-date" defaultValue="upcoming">
                 <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:max-w-2xl md:grid-cols-4">
                   <TabsTrigger value="today" data-testid="button-date-today" className="flex-shrink-0">
                     <Calendar className="mr-1.5 md:mr-2 h-3.5 w-3.5 md:h-4 md:w-4" />
@@ -195,6 +203,13 @@ export default function Dashboard() {
             )}
 
             {/* All Games - Clean List */}
+            {(() => {
+              console.log('🎯 Dashboard render check:');
+              console.log('  - groupedGames:', groupedGames);
+              console.log('  - gamesLoading:', gamesLoading);
+              console.log('  - leagues length:', groupedGames?.leagues?.length);
+              return null;
+            })()}
             {groupedGames && groupedGames.leagues.length > 0 ? (
               <AllGamesList 
                 groupedGames={groupedGames} 

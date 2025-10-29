@@ -327,19 +327,31 @@ export class MemStorage implements IStorage {
   }
 
   async getMatchDetail(gameId: string): Promise<import('@shared/schema').MatchDetail | null> {
-    const allGames = await this.getGamesFromScrapedData();
-    const game = allGames.find(g => g.id === gameId);
-    
-    if (!game) {
+    try {
+      console.log(`🔍 Looking for game with ID: ${gameId}`);
+      const allGames = await this.getGamesFromScrapedData();
+      console.log(`📊 Total games available: ${allGames.length}`);
+      
+      const game = allGames.find(g => g.id === gameId);
+      
+      if (!game) {
+        console.log(`❌ Game not found with ID: ${gameId}`);
+        console.log(`📋 Available game IDs (first 10): ${allGames.slice(0, 10).map(g => g.id).join(', ')}`);
+        return null;
+      }
+      
+      console.log(`✅ Found game: ${game.teams.home} vs ${game.teams.away}`);
+      
+      // Return game with enriched data structure (placeholder for now)
+      return {
+        ...game,
+        venue: game.league || 'TBD',
+        referee: 'TBD',
+      };
+    } catch (error) {
+      console.error('❌ Error in getMatchDetail:', error);
       return null;
     }
-    
-    // Return game with enriched data structure (placeholder for now)
-    return {
-      ...game,
-      venue: 'TBD',
-      referee: 'TBD',
-    };
   }
 
   private async getGamesFromScrapedData(): Promise<Game[]> {
@@ -567,19 +579,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMatchDetail(gameId: string): Promise<import('@shared/schema').MatchDetail | null> {
-    const allGames = await this.getGamesFromScrapedData();
-    const game = allGames.find(g => g.id === gameId);
-    
-    if (!game) {
+    try {
+      console.log(`🔍 Looking for game with ID: ${gameId}`);
+      const allGames = await this.getGamesFromScrapedData();
+      console.log(`📊 Total games available: ${allGames.length}`);
+      
+      const game = allGames.find(g => g.id === gameId);
+      
+      if (!game) {
+        console.log(`❌ Game not found with ID: ${gameId}`);
+        console.log(`📋 Available game IDs (first 10): ${allGames.slice(0, 10).map(g => g.id).join(', ')}`);
+        return null;
+      }
+      
+      console.log(`✅ Found game: ${game.teams.home} vs ${game.teams.away}`);
+      
+      // Return game with enriched data structure (placeholder for now)
+      return {
+        ...game,
+        venue: game.league || 'TBD',
+        referee: 'TBD',
+      };
+    } catch (error) {
+      console.error('❌ Error in getMatchDetail:', error);
       return null;
     }
-    
-    // Return game with enriched data structure (placeholder for now)
-    return {
-      ...game,
-      venue: 'TBD',
-      referee: 'TBD',
-    };
   }
 
   private async getCachedPrediction(sport: SportType, dateFilter?: string): Promise<ApexPrediction | null> {

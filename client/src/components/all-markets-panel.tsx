@@ -142,7 +142,7 @@ export function AllMarketsPanel({ markets }: AllMarketsPanelProps) {
                         </span>
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        Confidence: <span className="font-mono">{market.confidenceScore.toFixed(0)}/100</span>
+                        Confidence: <span className="font-mono">{Math.round(market.confidenceScore)}/100</span>
                       </div>
                     </div>
 

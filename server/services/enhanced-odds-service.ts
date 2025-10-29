@@ -351,9 +351,12 @@ export class EnhancedOddsService {
     const drawOdds = sport === 'soccer' ? 3.2 + Math.random() * 1.0 : undefined;
 
     const time = gameTime || new Date(Date.now() + (6 + Math.floor(Math.random() * 72)) * 60 * 60 * 1000); // 6-78 hours from now
+    
+    // Create consistent gameId based on teams and date (without timestamp)
+    const gameDate = time.toISOString().split('T')[0];
 
     return {
-      gameId: `scraped-${homeTeam.replace(/\s/g, '-').toLowerCase()}-${awayTeam.replace(/\s/g, '-').toLowerCase()}-${time.getTime()}`,
+      gameId: `${homeTeam.replace(/\s/g, '-').toLowerCase()}-${awayTeam.replace(/\s/g, '-').toLowerCase()}-${gameDate}`,
       sport,
       league: this.guessLeague(sport),
       homeTeam,

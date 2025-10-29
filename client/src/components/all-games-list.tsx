@@ -178,7 +178,7 @@ export function AllGamesList({ groupedGames, onGameClick }: AllGamesListProps) {
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-muted-foreground">Prediction Confidence</span>
                           <Badge variant="outline" data-testid={`confidence-${game.id}`}>
-                            {game.confidence}%
+                            {Math.round(game.confidence)}%
                           </Badge>
                         </div>
                       )}

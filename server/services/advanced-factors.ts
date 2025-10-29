@@ -218,14 +218,33 @@ export class AdvancedFactorsEngine {
       'Off-ball movement quality score',
     ];
 
+    // Real calculations based on actual team data
     additionalMicroFactors.forEach((factor, idx) => {
+      // Calculate real weight based on team data comparison
+      const teamValue = teamData?.[factor] || 0;
+      const oppValue = opponentData?.[factor] || 0;
+      const dataAvailable = teamValue !== 0 || oppValue !== 0;
+      
+      // Weight based on data availability and reliability
+      const weight = dataAvailable ? (1.5 + (idx * 0.1) % 1.5) : 1.0;
+      
+      // Impact based on actual team comparison
+      let impact = 0;
+      if (dataAvailable) {
+        const diff = teamValue - oppValue;
+        impact = Math.max(-1.5, Math.min(1.5, diff * 0.5));
+      }
+      
+      // Confidence based on data quality
+      const confidence = dataAvailable ? 75 : 50;
+      
       factors.push({
         category: 'Micro-Performance',
         factor,
-        weight: 1.5 + Math.random() * 1.5,
-        impact: Math.random() * 2 - 0.5,
-        confidence: 70 + Math.random() * 20,
-        source: 'Advanced analytics',
+        weight,
+        impact,
+        confidence,
+        source: dataAvailable ? 'Team statistics' : 'Estimated (no data)',
         lastUpdated: new Date().toISOString(),
       });
     });
@@ -316,14 +335,26 @@ export class AdvancedFactorsEngine {
       'Player arrival time at stadium (focus)',
     ];
 
+    // Real calculations based on context and team data
     psychFactors.forEach((factor, idx) => {
+      // Weight varies by factor importance (earlier factors more important)
+      const weight = 1.5 - (idx * 0.025);
+      
+      // Impact based on contextual data availability
+      const contextValue = contextData?.[factor] || 0;
+      const hasContext = contextValue !== 0;
+      const impact = hasContext ? (contextValue > 0 ? 0.8 : -0.4) : 0;
+      
+      // Confidence lower for psychological factors (harder to measure)
+      const confidence = hasContext ? 70 : 55;
+      
       factors.push({
         category: 'Psychological',
         factor,
-        weight: 1.0 + Math.random() * 1.0,
-        impact: Math.random() * 1.5 - 0.3,
-        confidence: 60 + Math.random() * 25,
-        source: 'Behavioral analysis',
+        weight,
+        impact,
+        confidence,
+        source: hasContext ? 'Behavioral analysis' : 'Estimated',
         lastUpdated: new Date().toISOString(),
       });
     });
@@ -413,14 +444,26 @@ export class AdvancedFactorsEngine {
       'Electromagnetic field strength (fitness tracker interference)',
     ];
 
-    envFactors.forEach(factor => {
+    // Real calculations based on weather and venue data
+    envFactors.forEach((factor, idx) => {
+      // Weight based on actual weather/venue data availability
+      const envValue = weatherData?.[factor] || venueData?.[factor] || 0;
+      const hasData = envValue !== 0;
+      const weight = hasData ? 1.2 : 0.6;
+      
+      // Impact based on measured environmental conditions
+      const impact = hasData ? (envValue > 0 ? 0.6 : -0.3) : 0;
+      
+      // Confidence based on data source reliability
+      const confidence = hasData ? 75 : 50;
+      
       factors.push({
         category: 'Environmental',
         factor,
-        weight: 0.8 + Math.random() * 1.2,
-        impact: Math.random() * 1.0 - 0.2,
-        confidence: 50 + Math.random() * 30,
-        source: 'Environmental sensors',
+        weight,
+        impact,
+        confidence,
+        source: hasData ? 'Environmental sensors' : 'Estimated',
         lastUpdated: new Date().toISOString(),
       });
     });
@@ -504,14 +547,18 @@ export class AdvancedFactorsEngine {
       'Jersey sales trends',
     ];
 
-    socialFactors.forEach(factor => {
+    socialFactors.forEach((factor, idx) => {
+      // Real calculations based on match context
+      const socialData = matchContext?.[factor] || teamData?.[factor] || 0;
+      const hasData = socialData !== 0;
+      
       factors.push({
         category: 'Social-Cultural',
         factor,
-        weight: 0.9 + Math.random() * 1.1,
-        impact: Math.random() * 1.2 - 0.3,
-        confidence: 55 + Math.random() * 25,
-        source: 'Social monitoring',
+        weight: hasData ? 1.4 : 0.9,
+        impact: hasData ? (socialData > 0 ? 0.7 : -0.3) : 0,
+        confidence: hasData ? 70 : 55,
+        source: hasData ? 'Social monitoring' : 'Estimated',
         lastUpdated: new Date().toISOString(),
       });
     });
@@ -573,14 +620,20 @@ export class AdvancedFactorsEngine {
       'Broadcasting revenue share',
     ];
 
-    economicFactors.forEach(factor => {
+    economicFactors.forEach((factor, idx) => {
+      // Real calculations based on club financial data
+      const finData = clubData?.[factor] || 0;
+      const hasData = finData !== 0;
+      const negativeFactors = ['debt', 'pressure', 'dispute', 'investigation'];
+      const isNegative = negativeFactors.some(neg => factor.toLowerCase().includes(neg));
+      
       factors.push({
         category: 'Economic',
         factor,
-        weight: 1.0 + Math.random() * 1.5,
-        impact: Math.random() * 1.5 - 0.5,
-        confidence: 60 + Math.random() * 25,
-        source: 'Financial intelligence',
+        weight: hasData ? 1.8 : 1.0,
+        impact: hasData ? (isNegative ? -0.8 : 0.6) : 0,
+        confidence: hasData ? 75 : 60,
+        source: hasData ? 'Financial intelligence' : 'Estimated',
         lastUpdated: new Date().toISOString(),
       });
     });
@@ -592,92 +645,113 @@ export class AdvancedFactorsEngine {
   async analyzeApexTiers(matchData: any): Promise<AdvancedFactorScore[]> {
     const factors: AdvancedFactorScore[] = [];
 
-    // TIER 1: QUANTITATIVE EFFICIENCY
-    APEX_PREDICTION_FACTORS.QUANTITATIVE_EFFICIENCY.forEach(apexFactor => {
+    // TIER 1: QUANTITATIVE EFFICIENCY - Use real match data
+    APEX_PREDICTION_FACTORS.QUANTITATIVE_EFFICIENCY.forEach((apexFactor, idx) => {
+      const factorData = matchData?.[apexFactor.factor] || 0;
+      const hasData = factorData !== 0;
+      
       factors.push({
         category: 'APEX-Tier1-Quantitative',
         factor: apexFactor.factor,
-        weight: 2.5 + Math.random() * 0.5,
-        impact: Math.random() * 2.0 - 0.3,
-        confidence: 80 + Math.random() * 15,
+        weight: hasData ? 2.7 : 2.5,
+        impact: hasData ? factorData * 0.8 : 0,
+        confidence: hasData ? 88 : 80,
         source: apexFactor.type,
         lastUpdated: new Date().toISOString(),
       });
     });
 
-    // TIER 2: LOGISTICAL SCHEDULING
-    APEX_PREDICTION_FACTORS.LOGISTICAL_SCHEDULING.forEach(apexFactor => {
+    // TIER 2: LOGISTICAL SCHEDULING - Use real schedule data
+    APEX_PREDICTION_FACTORS.LOGISTICAL_SCHEDULING.forEach((apexFactor, idx) => {
+      const schedData = matchData?.[apexFactor.factor] || 0;
+      const hasData = schedData !== 0;
+      
       factors.push({
         category: 'APEX-Tier2-Scheduling',
         factor: apexFactor.factor,
-        weight: 2.0 + Math.random() * 0.8,
-        impact: Math.random() * 1.8 - 0.4,
-        confidence: 75 + Math.random() * 15,
+        weight: hasData ? 2.4 : 2.0,
+        impact: hasData ? schedData * 0.7 : 0,
+        confidence: hasData ? 82 : 75,
         source: apexFactor.type,
         lastUpdated: new Date().toISOString(),
       });
     });
 
-    // TIER 3: PSYCHOLOGICAL INTANGIBLES
-    APEX_PREDICTION_FACTORS.PSYCHOLOGICAL_INTANGIBLES.forEach(apexFactor => {
+    // TIER 3: PSYCHOLOGICAL INTANGIBLES - Use real psych indicators
+    APEX_PREDICTION_FACTORS.PSYCHOLOGICAL_INTANGIBLES.forEach((apexFactor, idx) => {
+      const psychData = matchData?.[apexFactor.factor] || 0;
+      const hasData = psychData !== 0;
+      
       factors.push({
         category: 'APEX-Tier3-Psychology',
         factor: apexFactor.factor,
-        weight: 1.8 + Math.random() * 0.7,
-        impact: Math.random() * 1.5 - 0.2,
-        confidence: 70 + Math.random() * 20,
+        weight: hasData ? 2.1 : 1.8,
+        impact: hasData ? psychData * 0.6 : 0,
+        confidence: hasData ? 78 : 70,
         source: apexFactor.type,
         lastUpdated: new Date().toISOString(),
       });
     });
 
-    // TIER 4: ENVIRONMENTAL BIAS
-    APEX_PREDICTION_FACTORS.ENVIRONMENTAL_BIAS.forEach(apexFactor => {
+    // TIER 4: ENVIRONMENTAL BIAS - Use real environmental data
+    APEX_PREDICTION_FACTORS.ENVIRONMENTAL_BIAS.forEach((apexFactor, idx) => {
+      const envData = matchData?.[apexFactor.factor] || 0;
+      const hasData = envData !== 0;
+      
       factors.push({
         category: 'APEX-Tier4-Environmental',
         factor: apexFactor.factor,
-        weight: 1.5 + Math.random() * 0.8,
-        impact: Math.random() * 1.3 - 0.3,
-        confidence: 65 + Math.random() * 20,
+        weight: hasData ? 1.9 : 1.5,
+        impact: hasData ? envData * 0.5 : 0,
+        confidence: hasData ? 75 : 65,
         source: apexFactor.type,
         lastUpdated: new Date().toISOString(),
       });
     });
 
-    // TIER 5: TACTICAL DEPTH
-    APEX_PREDICTION_FACTORS.TACTICAL_DEPTH_IMPACT.forEach(apexFactor => {
+    // TIER 5: TACTICAL DEPTH - Use real tactical analysis
+    APEX_PREDICTION_FACTORS.TACTICAL_DEPTH_IMPACT.forEach((apexFactor, idx) => {
+      const tactData = matchData?.[apexFactor.factor] || 0;
+      const hasData = tactData !== 0;
+      
       factors.push({
         category: 'APEX-Tier5-Tactical',
         factor: apexFactor.factor,
-        weight: 2.2 + Math.random() * 0.6,
-        impact: Math.random() * 1.7 - 0.2,
-        confidence: 75 + Math.random() * 15,
+        weight: hasData ? 2.5 : 2.2,
+        impact: hasData ? tactData * 0.75 : 0,
+        confidence: hasData ? 83 : 75,
         source: apexFactor.type,
         lastUpdated: new Date().toISOString(),
       });
     });
 
-    // TIER 6: MARKET META LEARNING
-    APEX_PREDICTION_FACTORS.MARKET_META_LEARNING.forEach(apexFactor => {
+    // TIER 6: MARKET META LEARNING - Use real market data
+    APEX_PREDICTION_FACTORS.MARKET_META_LEARNING.forEach((apexFactor, idx) => {
+      const mktData = matchData?.[apexFactor.factor] || 0;
+      const hasData = mktData !== 0;
+      
       factors.push({
         category: 'APEX-Tier6-Market',
         factor: apexFactor.factor,
-        weight: 2.0 + Math.random() * 0.8,
-        impact: Math.random() * 1.6 - 0.1,
-        confidence: 78 + Math.random() * 12,
+        weight: hasData ? 2.4 : 2.0,
+        impact: hasData ? mktData * 0.7 : 0,
+        confidence: hasData ? 84 : 78,
         source: apexFactor.type,
         lastUpdated: new Date().toISOString(),
       });
     });
 
-    // TIER 7: RECENT FORM & MOMENTUM
-    APEX_PREDICTION_FACTORS.RECENT_FORM_MOMENTUM.forEach(apexFactor => {
+    // TIER 7: RECENT FORM & MOMENTUM - Use real form data
+    APEX_PREDICTION_FACTORS.RECENT_FORM_MOMENTUM.forEach((apexFactor, idx) => {
+      const formData = matchData?.[apexFactor.factor] || 0;
+      const hasData = formData !== 0;
+      
       factors.push({
         category: 'APEX-Tier7-Momentum',
         factor: apexFactor.factor,
-        weight: 2.1 + Math.random() * 0.7,
-        impact: Math.random() * 1.8 - 0.2,
-        confidence: 80 + Math.random() * 12,
+        weight: hasData ? 2.5 : 2.1,
+        impact: hasData ? formData * 0.8 : 0,
+        confidence: hasData ? 86 : 80,
         source: apexFactor.type,
         lastUpdated: new Date().toISOString(),
       });
@@ -761,14 +835,17 @@ export class AdvancedFactorsEngine {
       'Muscle Imbalance Risk'
     ];
 
-    biometricFactors.forEach(factor => {
+    biometricFactors.forEach((factor, idx) => {
+      const bioData = matchData?.[factor] || 0;
+      const hasData = bioData !== 0;
+      
       factors.push({
         category: 'Biometric',
         factor,
-        weight: 1.9 + Math.random() * 0.9,
-        impact: Math.random() * 1.5 - 0.2,
-        confidence: 70 + Math.random() * 20,
-        source: 'Biometric sensors',
+        weight: hasData ? 2.2 : 1.9,
+        impact: hasData ? bioData * 0.65 : 0,
+        confidence: hasData ? 82 : 70,
+        source: hasData ? 'Biometric sensors' : 'Estimated',
         lastUpdated: new Date().toISOString(),
       });
     });
@@ -787,14 +864,17 @@ export class AdvancedFactorsEngine {
       'Mental Flexibility Score'
     ];
 
-    cognitiveFactors.forEach(factor => {
+    cognitiveFactors.forEach((factor, idx) => {
+      const cogData = matchData?.[factor] || 0;
+      const hasData = cogData !== 0;
+      
       factors.push({
         category: 'Cognitive',
         factor,
-        weight: 2.1 + Math.random() * 0.8,
-        impact: Math.random() * 1.6 - 0.1,
-        confidence: 72 + Math.random() * 18,
-        source: 'Cognitive testing',
+        weight: hasData ? 2.5 : 2.1,
+        impact: hasData ? cogData * 0.7 : 0,
+        confidence: hasData ? 84 : 72,
+        source: hasData ? 'Cognitive testing' : 'Estimated',
         lastUpdated: new Date().toISOString(),
       });
     });
@@ -813,14 +893,17 @@ export class AdvancedFactorsEngine {
       'Captain Influence Factor'
     ];
 
-    chemistryFactors.forEach(factor => {
+    chemistryFactors.forEach((factor, idx) => {
+      const chemData = matchData?.[factor] || 0;
+      const hasData = chemData !== 0;
+      
       factors.push({
         category: 'Chemistry',
         factor,
-        weight: 2.3 + Math.random() * 0.7,
-        impact: Math.random() * 1.7 - 0.1,
-        confidence: 75 + Math.random() * 15,
-        source: 'Team dynamics analysis',
+        weight: hasData ? 2.6 : 2.3,
+        impact: hasData ? chemData * 0.75 : 0,
+        confidence: hasData ? 84 : 75,
+        source: hasData ? 'Team dynamics analysis' : 'Estimated',
         lastUpdated: new Date().toISOString(),
       });
     });
@@ -839,14 +922,17 @@ export class AdvancedFactorsEngine {
       'Spatial Occupation Strategy'
     ];
 
-    tacticalFactors.forEach(factor => {
+    tacticalFactors.forEach((factor, idx) => {
+      const tactData = matchData?.[factor] || 0;
+      const hasData = tactData !== 0;
+      
       factors.push({
         category: 'Tactical',
         factor,
-        weight: 2.4 + Math.random() * 0.6,
-        impact: Math.random() * 1.8 - 0.2,
-        confidence: 76 + Math.random() * 14,
-        source: 'Tactical analysis',
+        weight: hasData ? 2.7 : 2.4,
+        impact: hasData ? tactData * 0.8 : 0,
+        confidence: hasData ? 86 : 76,
+        source: hasData ? 'Tactical analysis' : 'Estimated',
         lastUpdated: new Date().toISOString(),
       });
     });
@@ -865,14 +951,17 @@ export class AdvancedFactorsEngine {
       'Performance Optimization Tools'
     ];
 
-    techFactors.forEach(factor => {
+    techFactors.forEach((factor, idx) => {
+      const techData = matchData?.[factor] || 0;
+      const hasData = techData !== 0;
+      
       factors.push({
         category: 'Technology',
         factor,
-        weight: 2.0 + Math.random() * 0.6,
-        impact: Math.random() * 1.5 - 0.1,
-        confidence: 73 + Math.random() * 17,
-        source: 'Technology tracking',
+        weight: hasData ? 2.3 : 2.0,
+        impact: hasData ? techData * 0.65 : 0,
+        confidence: hasData ? 83 : 73,
+        source: hasData ? 'Technology tracking' : 'Estimated',
         lastUpdated: new Date().toISOString(),
       });
     });
@@ -891,14 +980,17 @@ export class AdvancedFactorsEngine {
       'Comeback Capability Index'
     ];
 
-    historicalFactors.forEach(factor => {
+    historicalFactors.forEach((factor, idx) => {
+      const histData = matchData?.[factor] || 0;
+      const hasData = histData !== 0;
+      
       factors.push({
         category: 'Historical',
         factor,
-        weight: 2.2 + Math.random() * 0.7,
-        impact: Math.random() * 1.6 - 0.2,
-        confidence: 77 + Math.random() * 13,
-        source: 'Historical database',
+        weight: hasData ? 2.5 : 2.2,
+        impact: hasData ? histData * 0.7 : 0,
+        confidence: hasData ? 84 : 77,
+        source: hasData ? 'Historical database' : 'Estimated',
         lastUpdated: new Date().toISOString(),
       });
     });
@@ -917,14 +1009,17 @@ export class AdvancedFactorsEngine {
       'Derby Match Intensity'
     ];
 
-    situationalFactors.forEach(factor => {
+    situationalFactors.forEach((factor, idx) => {
+      const sitData = matchData?.[factor] || 0;
+      const hasData = sitData !== 0;
+      
       factors.push({
         category: 'Situational',
         factor,
-        weight: 2.5 + Math.random() * 0.6,
-        impact: Math.random() * 1.9 - 0.2,
-        confidence: 78 + Math.random() * 12,
-        source: 'Contextual analysis',
+        weight: hasData ? 2.8 : 2.5,
+        impact: hasData ? sitData * 0.85 : 0,
+        confidence: hasData ? 86 : 78,
+        source: hasData ? 'Contextual analysis' : 'Estimated',
         lastUpdated: new Date().toISOString(),
       });
     });
@@ -943,14 +1038,17 @@ export class AdvancedFactorsEngine {
       'Arbitrage Opportunity Presence'
     ];
 
-    marketFactors.forEach(factor => {
+    marketFactors.forEach((factor, idx) => {
+      const mktData = matchData?.[factor] || 0;
+      const hasData = mktData !== 0;
+      
       factors.push({
         category: 'Market',
         factor,
-        weight: 2.1 + Math.random() * 0.5,
-        impact: Math.random() * 1.6 - 0.1,
-        confidence: 74 + Math.random() * 16,
-        source: 'Market data',
+        weight: hasData ? 2.4 : 2.1,
+        impact: hasData ? mktData * 0.7 : 0,
+        confidence: hasData ? 84 : 74,
+        source: hasData ? 'Market data' : 'Estimated',
         lastUpdated: new Date().toISOString(),
       });
     });
@@ -969,14 +1067,17 @@ export class AdvancedFactorsEngine {
       'Medical Technology Access'
     ];
 
-    medicalFactors.forEach(factor => {
+    medicalFactors.forEach((factor, idx) => {
+      const medData = matchData?.[factor] || 0;
+      const hasData = medData !== 0;
+      
       factors.push({
         category: 'Medical',
         factor,
-        weight: 2.0 + Math.random() * 0.6,
-        impact: Math.random() * 1.5 - 0.2,
-        confidence: 71 + Math.random() * 19,
-        source: 'Medical reports',
+        weight: hasData ? 2.3 : 2.0,
+        impact: hasData ? medData * 0.65 : 0,
+        confidence: hasData ? 82 : 71,
+        source: hasData ? 'Medical reports' : 'Estimated',
         lastUpdated: new Date().toISOString(),
       });
     });
@@ -1017,13 +1118,27 @@ export class AdvancedFactorsEngine {
     let factorIndex = 0;
     remainingCategories.forEach(category => {
       for (let i = 0; i < 20; i++) {
+        const factorName = factorTemplates[factorIndex % factorTemplates.length] || `Advanced ${category} Factor ${i + 1}`;
+        const factorData = matchData?.[factorName] || 0;
+        const hasData = factorData !== 0;
+        
+        // Calculate weight based on factor index (earlier = more important)
+        const baseWeight = 1.5 - (i * 0.03);
+        const weight = hasData ? baseWeight + 0.5 : baseWeight;
+        
+        // Impact varies based on real data availability
+        const impact = hasData ? (factorData * 0.6) : 0;
+        
+        // Confidence based on data quality
+        const confidence = hasData ? 75 : 55;
+        
         factors.push({
           category,
-          factor: factorTemplates[factorIndex % factorTemplates.length] || `Advanced ${category} Factor ${i + 1}`,
-          weight: 0.5 + Math.random() * 2.0,
-          impact: Math.random() * 2.5 - 0.5,
-          confidence: 45 + Math.random() * 45,
-          source: 'Advanced analytics',
+          factor: factorName,
+          weight,
+          impact,
+          confidence,
+          source: hasData ? 'Advanced analytics' : 'Estimated',
           lastUpdated: new Date().toISOString(),
         });
         factorIndex++;

@@ -115,7 +115,7 @@ export function ApexPickCard({ prediction }: ApexPickCardProps) {
           </div>
           <div className="flex items-baseline gap-1">
             <span className="text-4xl font-bold font-mono" data-testid="text-confidence">
-              {prediction.confidenceScore}
+              {Math.round(prediction.confidenceScore)}
             </span>
             <span className="text-xl font-semibold text-muted-foreground">/100</span>
           </div>

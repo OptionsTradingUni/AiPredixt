@@ -177,7 +177,7 @@ export default function Dashboard() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-muted-foreground">Confidence:</span>
-                        <span className="font-semibold" data-testid="text-confidence">{apexPrediction.confidenceScore}%</span>
+                        <span className="font-semibold" data-testid="text-confidence">{Math.round(apexPrediction.confidenceScore)}%</span>
                       </div>
                     </div>
                   </div>
@@ -186,6 +186,7 @@ export default function Dashboard() {
                     size="sm"
                     className="w-full md:w-auto"
                     data-testid="button-view-details"
+                    onClick={() => navigate(`/match/${apexPrediction.id}`)}
                   >
                     View Full Analysis
                   </Button>

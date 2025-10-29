@@ -169,7 +169,7 @@ export default function AllGamesPage() {
                             />
                           </div>
                           <span className="text-sm font-medium" data-testid={`text-confidence-${prediction.id}`}>
-                            {prediction.confidenceScore}
+                            {Math.round(prediction.confidenceScore)}
                           </span>
                         </div>
                       </div>

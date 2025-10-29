@@ -1,0 +1,106 @@
+import { sql } from "drizzle-orm";
+import { pgTable, text, varchar, decimal, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+});
+
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
+});
+
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof users.$inferSelect;
+
+// Sports Prediction Types
+
+export type SportType = 'Football' | 'Tennis' | 'Basketball' | 'Hockey';
+
+export interface Probability {
+  ensembleAverage: number;
+  calibratedRange: {
+    lower: number;
+    upper: number;
+  };
+}
+
+export interface RiskAssessment {
+  var: number; // Value at Risk
+  cvar: number; // Conditional Value at Risk
+  sensitivityAnalysis: string;
+  adversarialSimulation: string;
+  blackSwanResilience: string;
+  keyRisks: string[];
+  potentialFailures: string[];
+}
+
+export interface ExplainabilityFeature {
+  feature: string;
+  weight: number;
+  impact: string;
+  causalLink: string;
+}
+
+export interface Justification {
+  summary: string;
+  deepDive: string[];
+  competitiveEdge: string[];
+  narrativeDebunking?: string;
+  refutation?: string;
+  explainabilityScore: number;
+  keyFeatures: ExplainabilityFeature[];
+}
+
+export interface ContingencyPick {
+  sport: SportType;
+  match: string;
+  betType: string;
+  odds: number;
+  confidenceScore: number;
+  stakeSize: string;
+  triggerConditions: string[];
+}
+
+export interface ApexPrediction {
+  id: string;
+  sport: SportType;
+  match: string;
+  teams: {
+    home: string;
+    away: string;
+  };
+  league: string;
+  betType: string;
+  bestOdds: number;
+  bookmaker: string;
+  timestamp: string;
+  marketLiquidity: 'High' | 'Medium' | 'Low';
+  calculatedProbability: Probability;
+  impliedProbability: number;
+  edge: number; // EV percentage
+  confidenceScore: number; // 1-100
+  predictionStability: 'High' | 'Medium' | 'Low';
+  riskAssessment: RiskAssessment;
+  recommendedStake: {
+    kellyFraction: string;
+    unitDescription: string;
+    percentageOfBankroll: number;
+  };
+  justification: Justification;
+  contingencyPick: ContingencyPick;
+}
+
+export interface HistoricalPerformance {
+  date: string;
+  sport: SportType;
+  accuracy: number;
+  roi: number;
+  confidenceScore: number;
+}
+
+export type SelectApexPrediction = ApexPrediction;

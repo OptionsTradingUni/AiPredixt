@@ -53,88 +53,49 @@ interface H2HData {
 export class H2HService {
   /**
    * Get comprehensive H2H data between two teams
+   * Returns empty data - real data scraping not yet implemented
    */
   async getH2HData(teamA: string, teamB: string, sport: string = 'Football'): Promise<H2HData> {
-    console.log(`📊 Fetching H2H data: ${teamA} vs ${teamB}...`);
+    console.log(`📊 H2H data not available - real data scraping needed for ${teamA} vs ${teamB}`);
     
-    // For now, generate sample data based on team names
-    // In production, this would scrape from Flashscore, ESPN, FBref, etc.
-    const matches = this.generateSampleH2HMatches(teamA, teamB, sport);
+    // Return empty H2H data - no fake data
+    // Real implementation would scrape from Flashscore, ESPN, FBref, etc.
+    const matches: H2HMatch[] = [];
     
-    // Split matches by venue
-    const homeMatches = matches.filter(m => m.venue === 'Home');
-    const awayMatches = matches.filter(m => m.venue === 'Away');
+    // Calculate statistics (empty)
+    const emptyStats: H2HStats = {
+      totalMatches: 0,
+      wins: 0,
+      draws: 0,
+      losses: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+      averageGoalsFor: 0,
+      averageGoalsAgainst: 0,
+      winPercentage: 0,
+      form: '',
+    };
     
-    // Calculate statistics
-    const allStats = this.calculateStats(matches, teamA);
-    const homeStats = this.calculateStats(homeMatches, teamA);
-    const awayStats = this.calculateStats(awayMatches, teamA);
-    
-    const summary = this.generateSummary(teamA, teamB, allStats);
+    const summary = `No historical data available for ${teamA} vs ${teamB}. Real data scraping needed.`;
     
     return {
       teamA,
       teamB,
       all: {
         matches,
-        stats: allStats,
+        stats: emptyStats,
       },
       homeAdvantage: {
-        matches: homeMatches,
-        stats: homeStats,
+        matches: [],
+        stats: emptyStats,
       },
       awayAdvantage: {
-        matches: awayMatches,
-        stats: awayStats,
+        matches: [],
+        stats: emptyStats,
       },
-      lastMeeting: matches[0], // Most recent match
+      lastMeeting: undefined,
       summary,
     };
-  }
-
-  /**
-   * Generate sample H2H matches
-   * In production, this would scrape real data from multiple sources
-   */
-  private generateSampleH2HMatches(teamA: string, teamB: string, sport: string): H2HMatch[] {
-    const matches: H2HMatch[] = [];
-    const competitions = ['Premier League', 'FA Cup', 'Champions League', 'League Cup'];
-    
-    // Generate 10 historical matches
-    for (let i = 0; i < 10; i++) {
-      const isHomeGame = i % 2 === 0;
-      const daysAgo = (i + 1) * 45; // ~45 days between matches
-      const date = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      
-      // Randomize scores but make it realistic
-      const homeScore = Math.floor(Math.random() * 4);
-      const awayScore = Math.floor(Math.random() * 3);
-      
-      const homeTeam = isHomeGame ? teamA : teamB;
-      const awayTeam = isHomeGame ? teamB : teamA;
-      
-      // Determine result from teamA's perspective
-      let result: 'Win' | 'Draw' | 'Loss';
-      if (isHomeGame) {
-        result = homeScore > awayScore ? 'Win' : homeScore === awayScore ? 'Draw' : 'Loss';
-      } else {
-        result = awayScore > homeScore ? 'Win' : awayScore === homeScore ? 'Draw' : 'Loss';
-      }
-      
-      matches.push({
-        date,
-        homeTeam,
-        awayTeam,
-        score: `${homeScore}-${awayScore}`,
-        homeScore,
-        awayScore,
-        competition: competitions[Math.floor(Math.random() * competitions.length)],
-        venue: isHomeGame ? 'Home' : 'Away',
-        result,
-      });
-    }
-    
-    return matches.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
   /**
@@ -221,22 +182,6 @@ export class H2HService {
    */
   getTeamForm(stats: H2HStats): string {
     return stats.form || 'UNKNOWN';
-  }
-
-  /**
-   * Scrape real H2H data from Flashscore, ESPN, FBref
-   * This is a placeholder for future implementation
-   */
-  private async scrapeRealH2HData(teamA: string, teamB: string, sport: string): Promise<H2HMatch[]> {
-    // TODO: Implement real scraping from:
-    // - Flashscore (detailed match results)
-    // - ESPN (match reports and scores)
-    // - FBref (comprehensive statistics)
-    // - WhoScored (advanced match data)
-    // - Sofascore (recent results)
-    
-    console.log('🔄 Real H2H scraping will be implemented in next update');
-    return [];
   }
 }
 

@@ -361,7 +361,55 @@ export class MemStorage implements IStorage {
         console.log(`📊 Generated and cached new games: ${allGames.length} games`);
       }
       
-      const game = allGames.find((g: Game) => g.id === gameId);
+      let game = allGames.find((g: Game) => g.id === gameId);
+      let prediction: ApexPrediction | undefined;
+      
+      // Fallback: If game not found by ID, try to find by prediction ID
+      // (In case the ID passed is actually a prediction's game reference)
+      if (!game) {
+        console.log(`⚠️ Game not found by exact ID, trying alternative lookup methods...`);
+        
+        // Try to get the prediction for this sport and find matching game
+        try {
+          const allPredictions = await this.getAllPredictions();
+          const matchingPrediction = allPredictions.find(p => p.id === gameId);
+          
+          if (matchingPrediction) {
+            console.log(`✅ Found prediction with ID: ${gameId}`);
+            prediction = matchingPrediction; // Store the found prediction
+            
+            // Find game by team names
+            game = allGames.find(g => 
+              g.teams.home === matchingPrediction.teams.home &&
+              g.teams.away === matchingPrediction.teams.away
+            );
+            
+            if (game) {
+              console.log(`✅ Found game via prediction lookup: ${game.teams.home} vs ${game.teams.away}`);
+            } else {
+              // Create a game object from the prediction if no game found in odds
+              console.log(`⚠️ No game found in odds data, creating from prediction`);
+              const today = new Date();
+              game = {
+                id: matchingPrediction.id,
+                sport: matchingPrediction.sport,
+                league: matchingPrediction.league,
+                date: today.toISOString().split('T')[0],
+                time: '00:00',
+                teams: matchingPrediction.teams,
+                status: 'upcoming' as const,
+                odds: {
+                  home: matchingPrediction.bestOdds,
+                  away: matchingPrediction.bestOdds,
+                },
+                predictionAvailable: true,
+              };
+            }
+          }
+        } catch (predError) {
+          console.error('Failed to lookup via predictions:', predError);
+        }
+      }
       
       if (!game) {
         console.log(`❌ Game not found with ID: ${gameId}`);
@@ -371,11 +419,29 @@ export class MemStorage implements IStorage {
       
       console.log(`✅ Found game: ${game.teams.home} vs ${game.teams.away}`);
       
-      // Return game with enriched data structure (placeholder for now)
+      // Try to get full prediction for this game if not already found
+      if (!prediction) {
+        try {
+          const allPredictions = await this.getAllPredictions(game.sport);
+          prediction = allPredictions.find(p => 
+            (p.id === game.id) ||
+            (p.teams.home === game.teams.home && p.teams.away === game.teams.away)
+          );
+          
+          if (prediction) {
+            console.log(`✅ Found prediction for game`);
+          }
+        } catch (predError) {
+          console.error('Failed to fetch prediction:', predError);
+        }
+      }
+      
+      // Return game with enriched data structure and prediction
       return {
         ...game,
         venue: game.league || 'TBD',
         referee: 'TBD',
+        prediction, // Include full prediction data
       };
     } catch (error) {
       console.error('❌ Error in getMatchDetail:', error);
@@ -622,7 +688,55 @@ export class DatabaseStorage implements IStorage {
       
       console.log(`📊 Total games available: ${allGames.length} (from cache)`);
       
-      const game = allGames.find(g => g.id === gameId);
+      let game = allGames.find(g => g.id === gameId);
+      let prediction: ApexPrediction | undefined;
+      
+      // Fallback: If game not found by ID, try to find by prediction ID
+      // (In case the ID passed is actually a prediction's game reference)
+      if (!game) {
+        console.log(`⚠️ Game not found by exact ID, trying alternative lookup methods...`);
+        
+        // Try to get the prediction for this sport and find matching game
+        try {
+          const allPredictions = await this.getAllPredictions();
+          const matchingPrediction = allPredictions.find(p => p.id === gameId);
+          
+          if (matchingPrediction) {
+            console.log(`✅ Found prediction with ID: ${gameId}`);
+            prediction = matchingPrediction; // Store the found prediction
+            
+            // Find game by team names
+            game = allGames.find(g => 
+              g.teams.home === matchingPrediction.teams.home &&
+              g.teams.away === matchingPrediction.teams.away
+            );
+            
+            if (game) {
+              console.log(`✅ Found game via prediction lookup: ${game.teams.home} vs ${game.teams.away}`);
+            } else {
+              // Create a game object from the prediction if no game found in odds
+              console.log(`⚠️ No game found in odds data, creating from prediction`);
+              const today = new Date();
+              game = {
+                id: matchingPrediction.id,
+                sport: matchingPrediction.sport,
+                league: matchingPrediction.league,
+                date: today.toISOString().split('T')[0],
+                time: '00:00',
+                teams: matchingPrediction.teams,
+                status: 'upcoming' as const,
+                odds: {
+                  home: matchingPrediction.bestOdds,
+                  away: matchingPrediction.bestOdds,
+                },
+                predictionAvailable: true,
+              };
+            }
+          }
+        } catch (predError) {
+          console.error('Failed to lookup via predictions:', predError);
+        }
+      }
       
       if (!game) {
         console.log(`❌ Game not found with ID: ${gameId}`);
@@ -632,11 +746,29 @@ export class DatabaseStorage implements IStorage {
       
       console.log(`✅ Found game: ${game.teams.home} vs ${game.teams.away}`);
       
-      // Return game with enriched data structure (placeholder for now)
+      // Try to get full prediction for this game if not already found
+      if (!prediction) {
+        try {
+          const allPredictions = await this.getAllPredictions(game.sport);
+          prediction = allPredictions.find(p => 
+            (p.id === game.id) ||
+            (p.teams.home === game.teams.home && p.teams.away === game.teams.away)
+          );
+          
+          if (prediction) {
+            console.log(`✅ Found prediction for game`);
+          }
+        } catch (predError) {
+          console.error('Failed to fetch prediction:', predError);
+        }
+      }
+      
+      // Return game with enriched data structure
       return {
         ...game,
         venue: game.league || 'TBD',
         referee: 'TBD',
+        prediction, // Include full prediction data
       };
     } catch (error) {
       console.error('❌ Error in getMatchDetail:', error);
